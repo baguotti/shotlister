@@ -308,7 +308,7 @@ table {
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
-  min-width: 1120px;
+  min-width: 1400px;
 }
 
 thead {
@@ -335,19 +335,21 @@ thead th {
 
 /* Column widths */
 .col-drag { width: 28px; }
-.col-num { width: 40px; }
-.col-priority { width: 30px; }
 .col-storyboard { width: 68px; transition: width 0.15s; }
-.col-shottype { width: 90px; }
-.col-chars { width: 100px; }
+.col-num, .col-shotnum { width: 40px; }
+.col-priority { width: 74px; }
 .col-location { width: 100px; }
-.col-notes { width: auto; min-width: 100px; }
-.col-props { width: 90px; }
-.col-duration { width: 68px; }
-.col-calltime { width: 68px; }
-.col-endtime { width: 68px; }
-.col-overrun { width: 68px; }
-.col-running { width: 68px; }
+.col-notes { width: auto; min-width: 120px; }
+.col-chars { width: 100px; }
+.col-shotsize { width: 72px; }
+.col-lens { width: 62px; }
+.col-movement { width: 90px; }
+.col-props { width: 80px; }
+.col-duration { width: 60px; }
+.col-calltime { width: 60px; }
+.col-endtime { width: 60px; }
+.col-overrun { width: 60px; }
+.col-running { width: 60px; }
 .col-actions { width: 30px; }
 
 tbody tr {
@@ -415,7 +417,7 @@ td[contenteditable="true"]:focus {
 .drag-handle:hover { opacity: 1; }
 
 /* Scene number */
-.scene-num {
+.scene-num, .shot-num {
   font-family: var(--font-mono);
   font-size: 12px;
   font-weight: 600;
@@ -764,7 +766,7 @@ td select:focus { border-color: var(--accent); background: var(--bg-3); }
   .toolbar { padding: 6px 8px; gap: 6px; }
   .toolbar .project-title { font-size: 13px; min-width: 100px; }
   .filter-bar { padding: 4px 8px; }
-  table { min-width: 860px; }
+  table { min-width: 1000px; }
   .card-grid { grid-template-columns: 1fr; gap: 8px; padding: 8px; }
   .col-props { width: 0; overflow: hidden; padding: 0; }
   .hide-tablet { display: none; }
@@ -1069,13 +1071,16 @@ input[type="file"].sr-only {
       <thead>
         <tr id="headerRow">
           <th class="col-drag"></th>
-          <th class="col-num">#</th>
-          <th class="col-priority">⚑</th>
           <th class="col-storyboard">Board</th>
-          <th class="col-shottype">Shot</th>
-          <th class="col-chars hide-mobile">Chars</th>
+          <th class="col-num">SCENE</th>
+          <th class="col-shotnum">SHOT</th>
+          <th class="col-priority">Priority</th>
           <th class="col-location">Location</th>
-          <th class="col-notes">Notes</th>
+          <th class="col-notes">Description</th>
+          <th class="col-chars">Character</th>
+          <th class="col-shotsize">Shot Size</th>
+          <th class="col-lens hide-tablet">Lens</th>
+          <th class="col-movement">Movement</th>
           <th class="col-props hide-tablet">Props</th>
           <th class="col-duration">Dur</th>
           <th class="col-calltime">Call</th>
@@ -1132,7 +1137,9 @@ input[type="file"].sr-only {
   'use strict';
 
   // ── Constants ──────────────────────────────────
-  const SHOT_TYPES = ['Static','Handheld','Dolly','Crane','Drone','OTS','Insert'];
+  const MOVEMENT_TYPES = ['STATIC','HANDHELD','DOLLY','CRANE','DRONE'];
+  const SHOT_SIZES = ['ECU','CU','MCU','MS','WIDE','EWS'];
+  const LENS_OPTIONS = ['18mm','24mm','35mm','50mm','85mm'];
   const PRIORITY_CYCLE = ['off','low','high'];
   const LS_KEY = 'sl-data';
   const LS_TITLE_KEY = 'sl-title';
@@ -1144,8 +1151,11 @@ input[type="file"].sr-only {
   const LS_AC_CHARS = 'sl-ac-characters';
   const LS_AC_LOCS = 'sl-ac-location';
   const LS_AC_PROPS = 'sl-ac-props';
+  const LS_AC_SHOTSIZE = 'sl-ac-shotsize';
+  const LS_AC_LENS = 'sl-ac-lens';
+  const LS_AC_MOVEMENT = 'sl-ac-movement';
   
-  const TOTAL_COLS = 16;
+  const TOTAL_COLS = 18;
 
   // Presets: proportional scale factors (M = 1.0 baseline).
   // Actual px values are computed live from the container height.
@@ -1182,7 +1192,7 @@ input[type="file"].sr-only {
   let currentProjectId = null;
   let shots = [];
   let viewMode = 'list'; // 'list' | 'card'
-  const GROUP_MODES = ['none', 'location', 'shotType', 'scene'];
+  const GROUP_MODES = ['none', 'location', 'movement', 'scene'];
   let currentGroupMode = 'none';
   let contextRowId = null;
   let dragSrcId = null;
@@ -1192,7 +1202,10 @@ input[type="file"].sr-only {
   let acSets = {
     characters: new Set(),
     location: new Set(),
-    props: new Set()
+    props: new Set(),
+    shotSize: new Set(),
+    lens: new Set(),
+    movement: new Set()
   };
 
   // Computed schedule — populated by cascadeSchedule()
@@ -1319,7 +1332,9 @@ input[type="file"].sr-only {
       num: '',
       priority: 'off',
       storyboard: '',
-      shotType: 'Static',
+      movement: 'STATIC',
+      shotSize: '',
+      lens: '',
       characters: '',
       location: '',
       notes: '',
@@ -1483,9 +1498,15 @@ input[type="file"].sr-only {
       const chars = localStorage.getItem(LS_AC_CHARS);
       const locs = localStorage.getItem(LS_AC_LOCS);
       const props = localStorage.getItem(LS_AC_PROPS);
+      const shotSize = localStorage.getItem(LS_AC_SHOTSIZE);
+      const lens = localStorage.getItem(LS_AC_LENS);
+      const movement = localStorage.getItem(LS_AC_MOVEMENT);
       if (chars) acSets.characters = new Set(JSON.parse(chars));
       if (locs) acSets.location = new Set(JSON.parse(locs));
       if (props) acSets.props = new Set(JSON.parse(props));
+      if (shotSize) acSets.shotSize = new Set(JSON.parse(shotSize));
+      if (lens) acSets.lens = new Set(JSON.parse(lens));
+      if (movement) acSets.movement = new Set(JSON.parse(movement));
     } catch(e) {}
   }
 
@@ -1494,6 +1515,9 @@ input[type="file"].sr-only {
       localStorage.setItem(LS_AC_CHARS, JSON.stringify([...acSets.characters]));
       localStorage.setItem(LS_AC_LOCS, JSON.stringify([...acSets.location]));
       localStorage.setItem(LS_AC_PROPS, JSON.stringify([...acSets.props]));
+      localStorage.setItem(LS_AC_SHOTSIZE, JSON.stringify([...acSets.shotSize]));
+      localStorage.setItem(LS_AC_LENS, JSON.stringify([...acSets.lens]));
+      localStorage.setItem(LS_AC_MOVEMENT, JSON.stringify([...acSets.movement]));
     } catch(e) {}
   }
 
@@ -1515,6 +1539,16 @@ input[type="file"].sr-only {
           const val = part.trim();
           if (val && !acSets.props.has(val)) { acSets.props.add(val); changed = true; }
         });
+      }
+      // Custom dropdown values
+      if (s.shotSize && !SHOT_SIZES.includes(s.shotSize)) {
+        if (!acSets.shotSize.has(s.shotSize)) { acSets.shotSize.add(s.shotSize); changed = true; }
+      }
+      if (s.lens && !LENS_OPTIONS.includes(s.lens)) {
+        if (!acSets.lens.has(s.lens)) { acSets.lens.add(s.lens); changed = true; }
+      }
+      if (s.movement && !MOVEMENT_TYPES.includes(s.movement)) {
+        if (!acSets.movement.has(s.movement)) { acSets.movement.add(s.movement); changed = true; }
       }
     });
     if (changed) saveAutocomplete();
@@ -1570,7 +1604,16 @@ input[type="file"].sr-only {
       const raw = localStorage.getItem('sl-project-' + id);
       if (raw) {
         shots = JSON.parse(raw);
-        shots.forEach(s => { if (s.callTime === undefined) s.callTime = ''; });
+        shots.forEach(s => {
+          if (s.callTime === undefined) s.callTime = '';
+          // Migrate legacy shotType → movement
+          if (s.movement === undefined) {
+            s.movement = s.shotType ? s.shotType.toUpperCase() : 'STATIC';
+          }
+          delete s.shotType;
+          if (s.shotSize === undefined) s.shotSize = '';
+          if (s.lens === undefined) s.lens = '';
+        });
       } else {
         shots = [];
       }
@@ -1616,9 +1659,9 @@ input[type="file"].sr-only {
 
   function seedDefaults() {
     shots = [
-      createShot({ num: '1', shotType: 'Static', characters: 'Alex', location: 'EXT. Rooftop', notes: 'Wide establishing shot of skyline at dusk', duration: '00:05', callTime: '07:00' }),
-      createShot({ num: '2', shotType: 'Handheld', characters: 'Alex, Sam', location: 'INT. Kitchen', notes: 'Close-up dialogue, over-the-shoulder', props: 'Coffee mug, newspaper', duration: '00:30' }),
-      createShot({ num: '3', shotType: 'Dolly', characters: 'Sam', location: 'EXT. Rooftop', notes: 'Tracking shot following character to edge', duration: '01:20', priority: 'high' }),
+      createShot({ num: '1', movement: 'STATIC', shotSize: 'WIDE', characters: 'Alex', location: 'EXT. Rooftop', notes: 'Wide establishing shot of skyline at dusk', duration: '00:05', callTime: '07:00' }),
+      createShot({ num: '2', movement: 'HANDHELD', shotSize: 'CU', characters: 'Alex, Sam', location: 'INT. Kitchen', notes: 'Close-up dialogue, over-the-shoulder', props: 'Coffee mug, newspaper', duration: '00:30' }),
+      createShot({ num: '3', movement: 'DOLLY', shotSize: 'MS', characters: 'Sam', location: 'EXT. Rooftop', notes: 'Tracking shot following character to edge', duration: '01:20', priority: 'high' }),
     ];
     projectTitle.textContent = 'Untitled Project';
     save();
@@ -1672,7 +1715,7 @@ input[type="file"].sr-only {
       const pct = 100 / shots.length;
       inner.innerHTML = shots.map(s => {
         const group = getSceneGroup(s.num);
-        let title = s.kind === 'block' ? `${esc(s.blockType)}${s.label?' '+esc(s.label):''}` : `#${esc(s.num)} · ${esc(s.shotType)}`;
+        let title = s.kind === 'block' ? `${esc(s.blockType)}${s.label?' '+esc(s.label):''}` : `#${esc(s.num)} · ${esc(s.movement || '')}`;
         if (group && groupTotals[group.numStr]) {
           title += ` (Sc ${group.numStr} Total: ${formatDuration(groupTotals[group.numStr].min)})`;
         }
@@ -1687,7 +1730,8 @@ input[type="file"].sr-only {
         const sec = d > 0 ? d : 0;
         const pct = (sec / totalDurSec) * 100;
         const group = getSceneGroup(s.num);
-        let title = s.kind === 'block' ? `${esc(s.blockType)}${s.label?' '+esc(s.label):''}` : `#${esc(s.num)} · ${esc(s.shotType)}`;
+        let title = s.kind === 'block' ? `${esc(s.blockType)}${s.label?' '+esc(s.label):''}` : `#${esc(s.num)} · ${esc(s.movement || '')}`;
+
         const durStr = s.duration || '--:--';
         title += ` · ${durStr}`;
         if (group && groupTotals[group.numStr]) {
@@ -1711,6 +1755,19 @@ input[type="file"].sr-only {
   // ── Render: Table ──────────────────────────────
   function renderTable() {
     const filtered = getFilteredShots();
+    
+    // Compute shot numbers within each scene
+    let sceneShotCounters = {};
+    filtered.forEach(s => {
+      if (s.kind === 'shot') {
+        const sceneKey = getSceneGroup(s.num)?.numStr || s.num || '_';
+        sceneShotCounters[sceneKey] = (sceneShotCounters[sceneKey] || 0) + 1;
+        s._shotNum = sceneShotCounters[sceneKey];
+      } else {
+        s._shotNum = '';
+      }
+    });
+    
     let html = '';
     let cumulative = 0;
 
@@ -1721,8 +1778,8 @@ input[type="file"].sr-only {
         let key = '';
         if (currentGroupMode === 'location') {
           key = s.location || '(No Location)';
-        } else if (currentGroupMode === 'shotType') {
-          key = s.kind === 'block' ? 'Blocks' : (s.shotType || '(No Shot Type)');
+        } else if (currentGroupMode === 'movement') {
+          key = s.kind === 'block' ? 'Blocks' : (s.movement || '(No Movement)');
         } else if (currentGroupMode === 'scene') {
           const group = getSceneGroup(s.num);
           key = group ? `Scene ${group.numStr}` : '(No Scene)';
@@ -1734,17 +1791,17 @@ input[type="file"].sr-only {
       order.forEach(key => {
         let icon = '';
         if (currentGroupMode === 'location') icon = '📍 ';
-        else if (currentGroupMode === 'shotType') icon = '🎥 ';
+        else if (currentGroupMode === 'movement') icon = '&#x1F3A5; ';
         else if (currentGroupMode === 'scene') icon = '🎬 ';
 
-        html += `<tr class="location-group"><td colspan="16">${icon}${esc(key)}</td></tr>`;
+        html += `<tr class="location-group"><td colspan="18">${icon}${esc(key)}</td></tr>`;
         let groupCum = 0;
         groups[key].forEach(s => {
           const dur = parseDuration(s.duration);
           if (dur > 0) { cumulative += dur; groupCum += dur; }
           html += s.kind === 'block' ? buildBlockRow(s, cumulative) : buildRow(s, cumulative);
         });
-        html += `<tr class="location-subtotal"><td colspan="9"></td><td colspan="4" style="text-align:center">${groups[key].length} items · ${formatDuration(groupCum)}</td><td colspan="3"></td></tr>`;
+        html += `<tr class="location-subtotal"><td colspan="11"></td><td colspan="4" style="text-align:center">${groups[key].length} items · ${formatDuration(groupCum)}</td><td colspan="3"></td></tr>`;
       });
     } else {
       filtered.forEach(s => {
@@ -1760,11 +1817,17 @@ input[type="file"].sr-only {
     updateLocationFilter();
   }
 
-  function buildRow(s, runTime) {
-    const shotOpts = SHOT_TYPES.map(t =>
-      `<option value="${t}"${s.shotType===t?' selected':''}>${t}</option>`
-    ).join('');
 
+  // Build select options: base list + custom persisted values + "Custom…" sentinel
+  function buildSelectOpts(baseOpts, acSet, currentVal) {
+    const customOpts = [...acSet].filter(v => !baseOpts.includes(v)).sort();
+    const allOpts = [...baseOpts, ...customOpts];
+    return allOpts.map(t =>
+      `<option value="${t}"${currentVal === t ? ' selected' : ''}>${t}</option>`
+    ).join('') + `<option value="__custom__">Custom\u2026</option>`;
+  }
+
+  function buildRow(s, runTime) {
     const storyboardContent = s.storyboard
       ? `<img src="${s.storyboard}" alt="storyboard" loading="lazy">`
       : `<div class="placeholder">+</div>`;
@@ -1772,15 +1835,10 @@ input[type="file"].sr-only {
     const durValid = isValidDuration(s.duration);
     const sched = scheduleMap[s.id] || { callMin: -1, endMin: -1, overrunSec: 0, isInherited: false };
 
-    // Call time display
     const callTimeVal = sched.isInherited ? formatTime(sched.callMin) : (s.callTime || '');
     const callValid = isValidTime(s.callTime);
     const inheritedClass = sched.isInherited ? ' inherited' : '';
-
-    // End time (read-only)
     const endTimeStr = sched.endMin >= 0 ? formatTime(sched.endMin) : '--:--';
-
-    // Overrun
     const overrunStr = sched.overrunMin > 0 ? formatOverrun(sched.overrunMin) : '';
     const overrunClass = sched.overrunMin > 0 ? ' has-overrun' : '';
 
@@ -1788,25 +1846,36 @@ input[type="file"].sr-only {
     const rowStyle = group ? `background:${group.bg};` : '';
     const borderStyle = group ? `border-left-color:${group.border} !important;` : '';
 
+    const movOpts  = buildSelectOpts(MOVEMENT_TYPES, acSets.movement, s.movement || 'STATIC');
+    const sizeOpts = buildSelectOpts(SHOT_SIZES,     acSets.shotSize, s.shotSize || '');
+    const lensOpts = buildSelectOpts(LENS_OPTIONS,   acSets.lens,     s.lens || '');
+
+    const pinIcon = (!sched.isInherited && s.callTime && isValidTime(s.callTime))
+      ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute; right:4px; pointer-events:none; opacity:0.8;" title="Pinned Call Time"><line x1="12" y1="17" x2="12" y2="22"></line><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"></path></svg>'
+      : '';
+
     return `<tr data-id="${s.id}" draggable="false" style="${rowStyle}">
-      <td class="drag-handle" title="Drag to reorder" style="${borderStyle}">⠿</td>
-      <td class="scene-num" contenteditable="true" data-field="num">${esc(s.num)}</td>
-      <td><span class="priority-dot" data-p="${s.priority}" title="Priority: ${s.priority}"></span></td>
+      <td class="drag-handle" title="Drag to reorder" style="${borderStyle}">&#x2807;</td>
       <td class="storyboard-cell" data-id="${s.id}">${storyboardContent}</td>
-      <td><select data-field="shotType">${shotOpts}</select></td>
-      <td class="hide-mobile" contenteditable="true" data-field="characters">${esc(s.characters)}</td>
+      <td class="scene-num" contenteditable="true" data-field="num">${esc(s.num)}</td>
+      <td class="shot-num">${esc(String(s._shotNum || ''))}</td>
+      <td><span class="priority-dot" data-p="${s.priority}" title="Priority: ${s.priority}"></span></td>
       <td contenteditable="true" data-field="location">${esc(s.location)}</td>
       <td contenteditable="true" data-field="notes">${esc(s.notes)}</td>
+      <td contenteditable="true" data-field="characters">${esc(s.characters)}</td>
+      <td><select data-field="shotSize">${sizeOpts}</select></td>
+      <td class="hide-tablet"><select data-field="lens">${lensOpts}</select></td>
+      <td><select data-field="movement">${movOpts}</select></td>
       <td class="hide-tablet" contenteditable="true" data-field="props">${esc(s.props)}</td>
-      <td><input class="duration-input${durValid?'':' invalid'}" type="text" value="${esc(s.duration)}" placeholder="HH:MM" data-field="duration"></td>
+      <td><input class="duration-input${durValid ? '' : ' invalid'}" type="text" value="${esc(s.duration)}" placeholder="HH:MM" data-field="duration"></td>
       <td><div style="position:relative;display:flex;align-items:center;">
-        <input class="time-input${callValid?'':' invalid'}${inheritedClass}" type="text" value="${callTimeVal}" placeholder="HH:MM" data-field="callTime" data-inherited="${sched.isInherited}" style="padding-right: 18px;">
-        ${!sched.isInherited && s.callTime && isValidTime(s.callTime) ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute; right:4px; pointer-events:none; opacity:0.8;" title="Pinned Call Time"><line x1="12" y1="17" x2="12" y2="22"></line><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"></path></svg>' : ''}
+        <input class="time-input${callValid ? '' : ' invalid'}${inheritedClass}" type="text" value="${callTimeVal}" placeholder="HH:MM" data-field="callTime" data-inherited="${sched.isInherited}" style="padding-right: 18px;">
+        ${pinIcon}
       </div></td>
       <td class="end-time">${endTimeStr}</td>
       <td class="overrun-cell${overrunClass}">${overrunStr}</td>
       <td class="running-time hide-tablet">${formatDuration(runTime)}</td>
-      <td><button class="actions-btn" title="Actions">⋯</button></td>
+      <td><button class="actions-btn" title="Actions">&#x22EF;</button></td>
     </tr>`;
   }
 
@@ -1825,31 +1894,39 @@ input[type="file"].sr-only {
     const rowStyle = group ? `background:${group.bg};` : '';
     const borderStyle = group ? `border-left-color:${group.border} !important;` : '';
 
+    const pinIcon = (!sched.isInherited && s.callTime && isValidTime(s.callTime))
+      ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute; right:4px; pointer-events:none; opacity:0.8;" title="Pinned Call Time"><line x1="12" y1="17" x2="12" y2="22"></line><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"></path></svg>'
+      : '';
+
     return `<tr class="block-row block-type-${s.blockType}" data-id="${s.id}" draggable="false" style="${rowStyle}">
-      <td class="drag-handle" title="Drag to reorder" style="${borderStyle}">⠿</td>
-      <td class="scene-num" contenteditable="true" data-field="num">${esc(s.num||'')}</td>
-      <td></td>
+      <td class="drag-handle" title="Drag to reorder" style="${borderStyle}">&#x2807;</td>
       <td class="storyboard-cell"></td>
+      <td class="scene-num" contenteditable="true" data-field="num">${esc(s.num || '')}</td>
+      <td class="shot-num"></td>
+      <td></td>
+      <td></td>
       <td>
-        <select data-field="blockType" class="block-select">
-          ${['PREP','BREAK','LUNCH','TRAVEL','CUSTOM'].map(t => `<option value="${t}"${s.blockType===t?' selected':''}>${t}</option>`).join('')}
-        </select>
+        <div style="display:inline-flex; align-items:center; gap:8px;">
+          <select data-field="blockType" class="block-select">
+            ${['PREP','BREAK','LUNCH','TRAVEL','CUSTOM'].map(t => `<option value="${t}"${s.blockType === t ? ' selected' : ''}>${t}</option>`).join('')}
+          </select>
+          <span contenteditable="true" data-field="label" class="block-label" data-placeholder="Label..." style="${s.blockType === 'CUSTOM' ? 'display:inline-block;' : 'display:none;'}">${esc(s.label || '')}</span>
+        </div>
       </td>
-      <td class="hide-mobile"></td>
-      <td>
-        <span contenteditable="true" data-field="label" class="block-label" data-placeholder="Label..." style="${s.blockType==='CUSTOM'?'display:inline-block;':'display:none;'}">${esc(s.label||'')}</span>
-      </td>
-      <td contenteditable="true" data-field="notes">${esc(s.notes||'')}</td>
+      <td></td>
+      <td></td>
       <td class="hide-tablet"></td>
-      <td><input class="duration-input${durValid?'':' invalid'}" type="text" value="${esc(s.duration)}" placeholder="HH:MM" data-field="duration"></td>
+      <td></td>
+      <td class="hide-tablet"></td>
+      <td><input class="duration-input${durValid ? '' : ' invalid'}" type="text" value="${esc(s.duration)}" placeholder="HH:MM" data-field="duration"></td>
       <td><div style="position:relative;display:flex;align-items:center;">
-        <input class="time-input${callValid?'':' invalid'}${inheritedClass}" type="text" value="${callTimeVal}" placeholder="HH:MM" data-field="callTime" data-inherited="${sched.isInherited}" style="padding-right: 18px;">
-        ${!sched.isInherited && s.callTime && isValidTime(s.callTime) ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute; right:4px; pointer-events:none; opacity:0.8;" title="Pinned Call Time"><line x1="12" y1="17" x2="12" y2="22"></line><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"></path></svg>' : ''}
+        <input class="time-input${callValid ? '' : ' invalid'}${inheritedClass}" type="text" value="${callTimeVal}" placeholder="HH:MM" data-field="callTime" data-inherited="${sched.isInherited}" style="padding-right: 18px;">
+        ${pinIcon}
       </div></td>
       <td class="end-time">${endTimeStr}</td>
       <td class="overrun-cell${overrunClass}">${overrunStr}</td>
       <td class="running-time hide-tablet">${formatDuration(runTime)}</td>
-      <td><button class="actions-btn" title="Actions">⋯</button></td>
+      <td><button class="actions-btn" title="Actions">&#x22EF;</button></td>
     </tr>`;
   }
 
@@ -1873,7 +1950,7 @@ input[type="file"].sr-only {
         <div class="card-body">
           <div class="card-header">
             <span class="card-num">#${esc(s.num)}</span>
-            <span class="card-type">${esc(s.shotType)}</span>
+            <span class="card-type">${esc(s.movement || '')}</span>
             <span class="priority-dot" data-p="${s.priority}" style="width:8px;height:8px;flex-shrink:0"></span>
           </div>
           ${s.characters ? `<div class="card-row"><span class="card-label">Characters</span> ${esc(s.characters)}</div>` : ''}
@@ -2059,20 +2136,36 @@ input[type="file"].sr-only {
       });
     });
 
-    // Select (shot type or block type)
+    // Selects (movement, shotSize, lens, blockType — with Custom… support)
     shotBody.querySelectorAll('select[data-field]').forEach(sel => {
       sel.addEventListener('change', () => {
         const row = sel.closest('tr');
         const shot = shots.find(s => s.id === row.dataset.id);
-        if (shot) {
-          if (sel.dataset.field === 'blockType') {
-            shot.blockType = sel.value;
-            const lbl = row.querySelector('.block-label');
-            if (lbl) lbl.style.display = sel.value === 'CUSTOM' ? '' : 'none';
+        if (!shot) return;
+        const field = sel.dataset.field;
+
+        if (sel.value === '__custom__') {
+          const labels = { shotSize: 'Shot Size', lens: 'Lens', movement: 'Movement' };
+          const customVal = prompt(`Enter custom ${labels[field] || field}:`);
+          if (customVal && customVal.trim()) {
+            const trimmed = customVal.trim();
+            if (acSets[field]) { acSets[field].add(trimmed); saveAutocomplete(); }
+            shot[field] = trimmed;
             save(); render();
           } else {
-            shot.shotType = sel.value; save();
+            sel.value = shot[field] || '';
           }
+          return;
+        }
+
+        if (field === 'blockType') {
+          shot.blockType = sel.value;
+          const lbl = row.querySelector('.block-label');
+          if (lbl) lbl.style.display = sel.value === 'CUSTOM' ? '' : 'none';
+          save(); render();
+        } else {
+          shot[field] = sel.value;
+          save();
         }
       });
     });
@@ -2468,7 +2561,7 @@ input[type="file"].sr-only {
       btn.textContent = '⊞ Group';
       btn.classList.remove('active');
     } else {
-      const label = currentGroupMode === 'location' ? 'Location' : currentGroupMode === 'shotType' ? 'Shot Type' : 'Scene';
+      const label = currentGroupMode === 'location' ? 'Location' : currentGroupMode === 'movement' ? 'Movement' : 'Scene';
       btn.textContent = `⊞ Group: ${label}`;
       btn.classList.add('active');
     }
@@ -2560,17 +2653,20 @@ input[type="file"].sr-only {
 
   // ── CSV Export ─────────────────────────────────
   function exportCSV() {
-    const headers = ['#','Priority','Type','Characters','Location/Label','Notes','Props/HMU','Duration','Call Time','End Time'];
+    const headers = ['Scene','Shot','Priority','Location','Description','Character','Shot Size','Lens','Movement','Props','Duration','Call Time','End Time'];
     const rows = shots.map(s => {
       const sched = scheduleMap[s.id] || { callMin: -1, endMin: -1 };
       if (s.kind === 'block') {
         return [
           s.num || '',
           '',
-          `"${s.blockType}"`,
           '',
           `"${(s.label||'').replace(/"/g,'""')}"`,
           `"${(s.notes||'').replace(/"/g,'""')}"`,
+          '',
+          '',
+          '',
+          `"${s.blockType}"`,
           '',
           s.duration,
           sched.callMin >= 0 ? formatTime(sched.callMin) : '',
@@ -2579,11 +2675,14 @@ input[type="file"].sr-only {
       }
       return [
         s.num,
+        s._shotNum || '',
         s.priority,
-        s.shotType,
-        `"${(s.characters||'').replace(/"/g,'""')}"`,
         `"${(s.location||'').replace(/"/g,'""')}"`,
         `"${(s.notes||'').replace(/"/g,'""')}"`,
+        `"${(s.characters||'').replace(/"/g,'""')}"`,
+        s.shotSize || '',
+        s.lens || '',
+        s.movement || '',
         `"${(s.props||'').replace(/"/g,'""')}"`,
         s.duration,
         sched.callMin >= 0 ? formatTime(sched.callMin) : '',
