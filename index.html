@@ -446,13 +446,36 @@ td[contenteditable="true"]:focus {
   text-align: center;
   cursor: pointer;
 }
+.storyboard-cell .sb-thumb-wrap {
+  position: relative;
+  display: inline-block;
+  line-height: 0;
+}
 .storyboard-cell img {
   max-width: 56px;
   max-height: 36px;
   border-radius: 3px;
   object-fit: cover;
   border: 1px solid var(--border);
+  transition: opacity .15s;
+  display: block;
 }
+.storyboard-cell .sb-thumb-wrap::after {
+  content: '⤢';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.45);
+  color: #fff;
+  font-size: 15px;
+  border-radius: 3px;
+  opacity: 0;
+  transition: opacity .15s;
+}
+.storyboard-cell:hover .sb-thumb-wrap::after { opacity: 1; }
+.storyboard-cell:hover img { opacity: 0.85; }
 .storyboard-cell .placeholder {
   width: 56px;
   height: 36px;
@@ -1003,6 +1026,142 @@ input[type="file"].sr-only {
     -webkit-print-color-adjust: exact;
   }
 }
+
+/* ── Storyboard Lightbox ──────────────────────────── */
+#lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.92);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  touch-action: pan-y;
+}
+#lightbox.lb-visible {
+  opacity: 1;
+  pointer-events: all;
+}
+#lightbox .lb-backdrop {
+  position: absolute;
+  inset: 0;
+  cursor: pointer;
+}
+#lightbox .lb-header {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 900px;
+  padding: 12px 16px;
+  color: rgba(255,255,255,0.75);
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+#lightbox .lb-label {
+  font-weight: 600;
+  letter-spacing: .04em;
+}
+#lightbox .lb-close {
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.18);
+  color: #fff;
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  transition: background .15s;
+  flex-shrink: 0;
+}
+#lightbox .lb-close:hover { background: rgba(255,255,255,0.25); }
+#lightbox .lb-img-wrap {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  width: 100%;
+  max-width: 900px;
+  padding: 0 56px;
+  box-sizing: border-box;
+}
+#lightbox .lb-img-wrap img {
+  max-width: 100%;
+  max-height: calc(100vh - 160px);
+  border-radius: 6px;
+  object-fit: contain;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.7);
+  user-select: none;
+  -webkit-user-drag: none;
+  transition: opacity 0.15s;
+}
+#lightbox .lb-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.18);
+  color: #fff;
+  border-radius: 50%;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 20px;
+  transition: background .15s, opacity .15s;
+  user-select: none;
+}
+#lightbox .lb-arrow:hover { background: rgba(255,255,255,0.25); }
+#lightbox .lb-arrow.disabled { opacity: 0.2; pointer-events: none; }
+#lightbox .lb-arrow-prev { left: 8px; }
+#lightbox .lb-arrow-next { right: 8px; }
+#lightbox .lb-footer {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 16px;
+  width: 100%;
+}
+#lightbox .lb-btn {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 16px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background .15s, color .15s;
+  letter-spacing: .04em;
+}
+#lightbox .lb-btn-replace {
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.25);
+  color: #fff;
+}
+#lightbox .lb-btn-replace:hover { background: rgba(255,255,255,0.22); }
+#lightbox .lb-btn-delete {
+  background: rgba(220,60,60,0.25);
+  border: 1px solid rgba(220,60,60,0.5);
+  color: #f88;
+}
+#lightbox .lb-btn-delete:hover { background: rgba(220,60,60,0.45); }
 </style>
 </head>
 <body>
@@ -1124,6 +1283,24 @@ input[type="file"].sr-only {
   <button id="cmDelete" class="danger">Delete</button>
 </div>
 
+<!-- Storyboard Lightbox -->
+<div id="lightbox">
+  <div class="lb-backdrop" id="lbBackdrop"></div>
+  <div class="lb-header">
+    <span class="lb-label" id="lbLabel"></span>
+    <button class="lb-close" id="lbClose" title="Close (Esc)">✕</button>
+  </div>
+  <div class="lb-img-wrap">
+    <button class="lb-arrow lb-arrow-prev" id="lbPrev" title="Previous (←)">&#8592;</button>
+    <img id="lbImg" src="" alt="Storyboard">
+    <button class="lb-arrow lb-arrow-next" id="lbNext" title="Next (→)">&#8594;</button>
+  </div>
+  <div class="lb-footer">
+    <button class="lb-btn lb-btn-replace" id="lbReplace">Replace</button>
+    <button class="lb-btn lb-btn-delete" id="lbDelete">Delete</button>
+  </div>
+</div>
+
 <!-- Hidden file input for storyboard -->
 <input type="file" accept="image/*" class="sr-only" id="fileInput">
 
@@ -1197,6 +1374,9 @@ input[type="file"].sr-only {
   let contextRowId = null;
   let dragSrcId = null;
   let currentStoryboardId = null;
+  let lbShotIds = [];   // shots with images, in current rendered order
+  let lbIndex   = -1;   // current index in lbShotIds
+
   let currentPreset = 'M'; // active preset key
 
   let acSets = {
@@ -1224,6 +1404,15 @@ input[type="file"].sr-only {
   const filterLocation = $('filterLocation');
   const filterCharacter = $('filterCharacter');
   const filterPriority = $('filterPriority');
+  const lightbox    = $('lightbox');
+  const lbImg       = $('lbImg');
+  const lbLabel     = $('lbLabel');
+  const lbClose     = $('lbClose');
+  const lbPrev      = $('lbPrev');
+  const lbNext      = $('lbNext');
+  const lbBackdrop  = $('lbBackdrop');
+  const lbReplace   = $('lbReplace');
+  const lbDelete    = $('lbDelete');
 
   // ── Title Auto-Resize ──────────────────────────
   // Binary-search the largest font-size that keeps text in one line.
@@ -1829,7 +2018,7 @@ input[type="file"].sr-only {
 
   function buildRow(s, runTime) {
     const storyboardContent = s.storyboard
-      ? `<img src="${s.storyboard}" alt="storyboard" loading="lazy">`
+      ? `<div class="sb-thumb-wrap"><img src="${s.storyboard}" alt="storyboard" loading="lazy"></div>`
       : `<div class="placeholder">+</div>`;
 
     const durValid = isValidDuration(s.duration);
@@ -2250,11 +2439,19 @@ input[type="file"].sr-only {
       });
     });
 
-    // Storyboard
+    // Storyboard — empty: file picker; has image: lightbox
     shotBody.querySelectorAll('.storyboard-cell').forEach(cell => {
       cell.addEventListener('click', () => {
-        currentStoryboardId = cell.dataset.id;
-        fileInput.click();
+        const id = cell.dataset.id;
+        if (!id) return; // block rows have no data-id on storyboard cell
+        const shot = shots.find(s => s.id === id);
+        if (!shot) return;
+        if (shot.storyboard) {
+          openLightbox(id);
+        } else {
+          currentStoryboardId = id;
+          fileInput.click();
+        }
       });
     });
 
@@ -2282,8 +2479,15 @@ input[type="file"].sr-only {
   function bindCardEvents() {
     cardGrid.querySelectorAll('.card-img').forEach(el => {
       el.addEventListener('click', () => {
-        currentStoryboardId = el.dataset.id;
-        fileInput.click();
+        const id = el.dataset.id;
+        const shot = shots.find(s => s.id === id);
+        if (!shot) return;
+        if (shot.storyboard) {
+          openLightbox(id);
+        } else {
+          currentStoryboardId = id;
+          fileInput.click();
+        }
       });
     });
 
@@ -2309,6 +2513,121 @@ input[type="file"].sr-only {
     });
   }
 
+  // ── Lightbox ───────────────────────────────────
+  function getShotLabel(shot) {
+    if (!shot) return '';
+    const shotNum = shot._shotNum != null ? shot._shotNum : '';
+    if (shot.num && shotNum) return `Scene ${shot.num}  /  Shot ${shotNum}`;
+    if (shot.num) return `Scene ${shot.num}`;
+    return 'Shot';
+  }
+
+  function openLightbox(id) {
+    // Build ordered list of all shots that have storyboard images, in current
+    // rendered (filtered) order. We walk the actual tbody rows so the order
+    // matches what the user sees (including group mode, filters, etc.).
+    const renderedIds = Array.from(
+      shotBody.querySelectorAll('tr[data-id]')
+    ).map(tr => tr.dataset.id);
+
+    lbShotIds = renderedIds.filter(rid => {
+      const s = shots.find(s => s.id === rid);
+      return s && s.storyboard;
+    });
+
+    lbIndex = lbShotIds.indexOf(id);
+    if (lbIndex === -1) return; // shouldn't happen
+
+    lbRefresh();
+    lightbox.classList.add('lb-visible');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeLightbox() {
+    lightbox.classList.remove('lb-visible');
+    document.body.style.overflow = '';
+    lbShotIds = [];
+    lbIndex = -1;
+  }
+
+  function lbRefresh() {
+    const id   = lbShotIds[lbIndex];
+    const shot = shots.find(s => s.id === id);
+    if (!shot) return;
+
+    lbImg.style.opacity = '0';
+    // Small tick so the fade-out is visible when navigating
+    requestAnimationFrame(() => {
+      lbImg.src = shot.storyboard;
+      lbImg.onload = () => { lbImg.style.opacity = '1'; };
+      // If cached, onload may not fire; force opacity
+      if (lbImg.complete) lbImg.style.opacity = '1';
+    });
+
+    lbLabel.textContent = getShotLabel(shot);
+    lbPrev.classList.toggle('disabled', lbIndex === 0);
+    lbNext.classList.toggle('disabled', lbIndex === lbShotIds.length - 1);
+    currentStoryboardId = id; // keep in sync for Replace
+  }
+
+  function lbNavigate(dir) {
+    const next = lbIndex + dir;
+    if (next < 0 || next >= lbShotIds.length) return;
+    lbIndex = next;
+    lbRefresh();
+  }
+
+  // Button wiring
+  lbClose.addEventListener('click', closeLightbox);
+  lbBackdrop.addEventListener('click', closeLightbox);
+  lbPrev.addEventListener('click', e => { e.stopPropagation(); lbNavigate(-1); });
+  lbNext.addEventListener('click', e => { e.stopPropagation(); lbNavigate(1); });
+
+  lbReplace.addEventListener('click', e => {
+    e.stopPropagation();
+    fileInput.click(); // currentStoryboardId already set by lbRefresh
+  });
+
+  lbDelete.addEventListener('click', e => {
+    e.stopPropagation();
+    const id   = lbShotIds[lbIndex];
+    const shot = shots.find(s => s.id === id);
+    if (!shot) return;
+    shot.storyboard = '';
+    save(); render();
+
+    // Remove from navigation list
+    lbShotIds.splice(lbIndex, 1);
+    if (lbShotIds.length === 0) {
+      closeLightbox();
+    } else {
+      lbIndex = Math.min(lbIndex, lbShotIds.length - 1);
+      lbRefresh();
+    }
+  });
+
+  // Keyboard navigation
+  document.addEventListener('keydown', e => {
+    if (!lightbox.classList.contains('lb-visible')) return;
+    if (e.key === 'Escape')      { closeLightbox(); }
+    else if (e.key === 'ArrowLeft')  { lbNavigate(-1); }
+    else if (e.key === 'ArrowRight') { lbNavigate(1); }
+  });
+
+  // Touch / swipe support
+  let lbTouchStartX = null;
+  lightbox.addEventListener('touchstart', e => {
+    if (e.touches.length === 1) lbTouchStartX = e.touches[0].clientX;
+  }, { passive: true });
+  lightbox.addEventListener('touchend', e => {
+    if (lbTouchStartX === null) return;
+    const dx = e.changedTouches[0].clientX - lbTouchStartX;
+    lbTouchStartX = null;
+    if (Math.abs(dx) < 40) return; // too small — treat as tap
+    if (dx < 0) lbNavigate(1);   // swipe left → next
+    else         lbNavigate(-1);  // swipe right → prev
+  }, { passive: true });
+
   // ── File Input (Storyboard) ────────────────────
   fileInput.addEventListener('change', e => {
     const file = e.target.files[0];
@@ -2330,7 +2649,15 @@ input[type="file"].sr-only {
         const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
 
         const shot = shots.find(s => s.id === currentStoryboardId);
-        if (shot) { shot.storyboard = dataUrl; save(); render(); }
+        if (shot) {
+          shot.storyboard = dataUrl;
+          save();
+          render();
+          // If lightbox is open (Replace flow), refresh it
+          if (lightbox.classList.contains('lb-visible')) {
+            openLightbox(currentStoryboardId);
+          }
+        }
       };
       img.src = ev.target.result;
     };
