@@ -1,0 +1,617 @@
+import { dom, $, customPrompt } from './dom.js';
+import { state, getSceneGroup, createShot, createBlock, PRIORITY_CYCLE, MOVEMENT_TYPES, SHOT_SIZES, LENS_OPTIONS } from './state.js';
+import { parseDuration, formatDuration, formatTime, formatOverrun, isValidDuration, isValidTime, normalizeDuration, normalizeTime } from './schedule.js';
+import { openLightbox } from './lightbox.js';
+import { showAutocomplete, hideAutocomplete, handleAutocompleteKey, filterAutocomplete, isAutocompleteActiveFor, scheduleAutocompleteHide, cancelAutocompleteHide, saveAutocomplete } from './autocomplete.js';
+import { render, save, getFilteredShots, updateStats, updateLocationFilter, esc, applyPresetLayout, initDrag, initTouchDrag, applyBulkEdit, updateSelectionUI } from './main.js';
+  // ── Render: Table ──────────────────────────────
+  export function renderTable() {
+    const filtered = getFilteredShots();
+    
+
+    let html = '';
+    let cumulative = 0;
+
+    if (state.currentGroupMode !== 'none') {
+      const groups = {};
+      const order = [];
+      filtered.forEach(s => {
+        let key = '';
+        if (state.currentGroupMode === 'location') {
+          key = s.location || '(No Location)';
+        } else if (state.currentGroupMode === 'movement') {
+          key = s.kind === 'block' ? 'Blocks' : (s.movement || '(No Movement)');
+        } else if (state.currentGroupMode === 'scene') {
+          const group = getSceneGroup(s.num);
+          key = group ? `Scene ${group.numStr}` : '(No Scene)';
+        }
+        if (!groups[key]) { groups[key] = []; order.push(key); }
+        groups[key].push(s);
+      });
+
+      order.forEach(key => {
+        let icon = '';
+        if (state.currentGroupMode === 'location') icon = '📍 ';
+        else if (state.currentGroupMode === 'movement') icon = '&#x1F3A5; ';
+        else if (state.currentGroupMode === 'scene') icon = '🎬 ';
+
+        html += `<tr class="location-group"><td colspan="18">${icon}${esc(key)}</td></tr>`;
+        let groupCum = 0;
+        groups[key].forEach(s => {
+          const dur = parseDuration(s.duration);
+          if (dur > 0) { cumulative += dur; groupCum += dur; }
+          html += s.kind === 'block' ? buildBlockRow(s, cumulative) : buildRow(s, cumulative);
+        });
+        html += `<tr class="location-subtotal">
+          <td class="drag-handle"></td>
+          <td class="col-select"></td>
+          <td colspan="7"></td>
+          <td></td>
+          <td class="hide-tablet"></td>
+          <td></td>
+          <td class="hide-tablet"></td>
+          <td colspan="3" style="text-align:center">${groups[key].length} items · ${formatDuration(groupCum)}</td>
+          <td class="hide-tablet"></td>
+          <td class="col-actions"></td>
+        </tr>`;
+      });
+    } else {
+      let currentScene = null;
+      let sceneShots = [];
+
+      const renderSceneSummary = () => {
+        if (sceneShots.length > 0 && currentScene) {
+          const firstShot = sceneShots[0];
+          const lastShot = sceneShots[sceneShots.length - 1];
+          const startSched = state.scheduleMap[firstShot.id];
+          const endSched = state.scheduleMap[lastShot.id];
+          
+          let startStr = startSched && startSched.callMin >= 0 ? formatTime(startSched.callMin) : '--:--';
+          let endStr = endSched && endSched.endMin >= 0 ? formatTime(endSched.endMin) : '--:--';
+          
+          let totalDur = 0;
+          sceneShots.forEach(sh => totalDur += parseDuration(sh.duration));
+          
+          html += `<tr class="scene-summary-row" style="background: var(--bg-2); border-bottom: 1px solid var(--border);">
+            <td class="drag-handle"></td>
+            <td class="col-select"></td>
+            <td colspan="7" style="text-align: right; font-family: var(--font-mono); font-size: 11px; color: var(--text-2); padding: 6px 12px; font-weight: 600; text-transform: uppercase;">
+              Scene ${esc(currentScene)} Summary
+            </td>
+            <td></td>
+            <td class="hide-tablet"></td>
+            <td></td>
+            <td class="hide-tablet"></td>
+            <td style="text-align: center; font-family: var(--font-mono); font-size: 11px; color: var(--text-0); padding: 4px; font-weight: bold; line-height: 1.2;">
+              <span style="font-size: 8px; color: var(--text-2); font-weight: normal; display: block; text-transform: uppercase; letter-spacing: 0.5px;">Total</span>
+              ${formatDuration(totalDur)}
+            </td>
+            <td style="text-align: center; font-family: var(--font-mono); font-size: 11px; color: var(--text-0); padding: 4px; font-weight: bold; line-height: 1.2;">
+              <span style="font-size: 8px; color: var(--text-2); font-weight: normal; display: block; text-transform: uppercase; letter-spacing: 0.5px;">Start</span>
+              ${startStr}
+            </td>
+            <td style="text-align: center; font-family: var(--font-mono); font-size: 11px; color: var(--text-0); padding: 4px; font-weight: bold; line-height: 1.2;">
+              <span style="font-size: 8px; color: var(--text-2); font-weight: normal; display: block; text-transform: uppercase; letter-spacing: 0.5px;">End</span>
+              ${endStr}
+            </td>
+            <td class="hide-tablet"></td>
+            <td class="col-actions"></td>
+          </tr>`;
+        }
+      };
+
+      filtered.forEach(s => {
+        if (s.kind === 'shot') {
+          const sceneNum = s.num ? String(s.num).trim() : '';
+          if (sceneNum !== currentScene) {
+            renderSceneSummary();
+            currentScene = sceneNum;
+            sceneShots = [];
+          }
+          if (sceneNum) {
+            sceneShots.push(s);
+          }
+        }
+
+        const dur = parseDuration(s.duration);
+        if (dur > 0) cumulative += dur;
+        html += s.kind === 'block' ? buildBlockRow(s, cumulative) : buildRow(s, cumulative);
+      });
+      renderSceneSummary();
+    }
+
+    dom.shotBody.innerHTML = html;
+    updateStats();
+    updateLocationFilter();
+  }
+
+
+  // Build select options: base list + custom persisted values + "Custom…" sentinel
+  export function buildSelectOpts(baseOpts, acSet, currentVal) {
+    const customOpts = [...acSet].filter(v => !baseOpts.includes(v)).sort();
+    const allOpts = [...baseOpts, ...customOpts];
+    return allOpts.map(t =>
+      `<option value="${t}"${currentVal === t ? ' selected' : ''}>${t}</option>`
+    ).join('') + `<option value="__custom__">Custom\u2026</option>`;
+  }
+
+  export function buildRow(s, runTime) {
+    const prioMap = { 'off': '-', 'low': 'I', 'medium': 'II', 'high': 'III' };
+    const prioDisplay = prioMap[s.priority] || '-';
+
+    const storyboardContent = s.storyboard
+      ? `<div class="sb-thumb-wrap"><img src="${s.storyboard}" alt="storyboard" loading="lazy"></div>`
+      : `<div class="placeholder">+</div>`;
+
+    const durValid = isValidDuration(s.duration);
+    const sched = state.scheduleMap[s.id] || { callMin: -1, endMin: -1, overrunSec: 0, isInherited: false };
+
+    const callTimeVal = sched.isInherited ? formatTime(sched.callMin) : (s.callTime || '');
+    const callValid = isValidTime(s.callTime);
+    const inheritedClass = sched.isInherited ? ' inherited' : '';
+    const endTimeStr = sched.endMin >= 0 ? formatTime(sched.endMin) : '--:--';
+    const overrunStr = sched.overrunMin > 0 ? formatOverrun(sched.overrunMin) : '';
+    const overrunClass = sched.overrunMin > 0 ? ' has-overrun' : '';
+
+    const group = getSceneGroup(s.num);
+    const rowStyle = group ? `background:${group.bg};` : '';
+    const borderStyle = group ? `border-left-color:${group.border} !important;` : '';
+
+    const movOpts  = buildSelectOpts(MOVEMENT_TYPES, state.acSets.movement, s.movement || 'STATIC');
+    const sizeOpts = buildSelectOpts(SHOT_SIZES,     state.acSets.shotSize, s.shotSize || '');
+    const lensOpts = buildSelectOpts(LENS_OPTIONS,   state.acSets.lens,     s.lens || '');
+
+    const pinIcon = (!sched.isInherited && s.callTime && isValidTime(s.callTime))
+      ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute; right:4px; pointer-events:none; opacity:0.8;" title="Pinned Call Time"><line x1="12" y1="17" x2="12" y2="22"></line><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"></path></svg>'
+      : '';
+
+    return `<tr data-id="${s.id}" draggable="false" style="${rowStyle}">
+      <td class="drag-handle" title="Drag to reorder" style="${borderStyle}">&#x2807;</td>
+      <td class="col-select"><input type="checkbox" class="row-checkbox" data-id="${s.id}" ${state.selectedIds.has(s.id) ? 'checked' : ''}></td>
+      <td class="storyboard-cell" data-id="${s.id}">${storyboardContent}</td>
+      <td class="scene-num" contenteditable="true" data-field="num">${esc(s.num)}</td>
+      <td class="shot-num" contenteditable="true" data-field="shot">${esc(s.shot || '')}</td>
+      <td style="text-align: center;"><span class="priority-label" data-p="${s.priority}" title="Priority: ${s.priority}">${prioDisplay}</span></td>
+      <td contenteditable="true" data-field="location">${esc(s.location)}</td>
+      <td contenteditable="true" data-field="notes">${esc(s.notes)}</td>
+      <td contenteditable="true" data-field="characters">${esc(s.characters)}</td>
+      <td><select class="screen-only" data-field="shotSize">${sizeOpts}</select><span class="print-only">${esc(s.shotSize || '')}</span></td>
+      <td class="hide-tablet"><select class="screen-only" data-field="lens">${lensOpts}</select><span class="print-only">${esc(s.lens || '')}</span></td>
+      <td><select class="screen-only" data-field="movement">${movOpts}</select><span class="print-only">${esc(s.movement || 'STATIC')}</span></td>
+      <td class="hide-tablet" contenteditable="true" data-field="props">${esc(s.props)}</td>
+      <td>
+        <input class="duration-input screen-only${durValid ? '' : ' invalid'}" type="text" value="${esc(s.duration)}" placeholder="HH:MM" data-field="duration">
+        <span class="print-only">${esc(s.duration)}</span>
+      </td>
+      <td><div style="position:relative;display:flex;align-items:center;">
+        <input class="time-input screen-only${callValid ? '' : ' invalid'}${inheritedClass}" type="text" value="${callTimeVal}" placeholder="HH:MM" data-field="callTime" data-inherited="${sched.isInherited}" style="padding-right: 18px;">
+        <span class="print-only">${callTimeVal}</span>
+        ${pinIcon}
+      </div></td>
+      <td class="end-time">${endTimeStr}</td>
+      <td class="running-time hide-tablet">${formatDuration(runTime)}</td>
+      <td class="col-actions"><button class="actions-btn" title="Actions">&#x22EF;</button></td>
+    </tr>`;
+  }
+
+  export function buildBlockRow(s, runTime) {
+    const durValid = isValidDuration(s.duration);
+    const sched = state.scheduleMap[s.id] || { callMin: -1, endMin: -1, overrunMin: 0, isInherited: false };
+
+    const callTimeVal = sched.isInherited ? formatTime(sched.callMin) : (s.callTime || '');
+    const callValid = isValidTime(s.callTime);
+    const inheritedClass = sched.isInherited ? ' inherited' : '';
+    const endTimeStr = sched.endMin >= 0 ? formatTime(sched.endMin) : '--:--';
+    const overrunStr = sched.overrunMin > 0 ? formatOverrun(sched.overrunMin) : '';
+    const overrunClass = sched.overrunMin > 0 ? ' has-overrun' : '';
+
+    const group = getSceneGroup(s.num);
+    const rowStyle = group ? `background:${group.bg};` : '';
+    const borderStyle = group ? `border-left-color:${group.border} !important;` : '';
+
+    const pinIcon = (!sched.isInherited && s.callTime && isValidTime(s.callTime))
+      ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute; right:4px; pointer-events:none; opacity:0.8;" title="Pinned Call Time"><line x1="12" y1="17" x2="12" y2="22"></line><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"></path></svg>'
+      : '';
+
+    return `<tr class="block-row block-type-${s.blockType}" data-id="${s.id}" draggable="false" style="${rowStyle}">
+      <td class="drag-handle" title="Drag to reorder" style="${borderStyle}">&#x2807;</td>
+      <td class="col-select"><input type="checkbox" class="row-checkbox" data-id="${s.id}" ${state.selectedIds.has(s.id) ? 'checked' : ''}></td>
+      <td class="storyboard-cell"></td>
+      <td class="scene-num" contenteditable="true" data-field="num">${esc(s.num || '')}</td>
+      <td class="shot-num"></td>
+      <td></td>
+      <td></td>
+      <td>
+        <div style="display:inline-flex; align-items:center; gap:8px;">
+          <select data-field="blockType" class="block-select screen-only">
+            ${['PREP','BREAK','LUNCH','TRAVEL','CUSTOM'].map(t => `<option value="${t}"${s.blockType === t ? ' selected' : ''}>${t}</option>`).join('')}
+          </select>
+          <span class="print-only">${esc(s.blockType)}</span>
+          <span contenteditable="true" data-field="label" class="block-label" data-placeholder="Label..." style="${s.blockType === 'CUSTOM' ? 'display:inline-block;' : 'display:none;'}">${esc(s.label || '')}</span>
+        </div>
+      </td>
+      <td></td>
+      <td></td>
+      <td class="hide-tablet"></td>
+      <td></td>
+      <td class="hide-tablet"></td>
+      <td>
+        <input class="duration-input screen-only${durValid ? '' : ' invalid'}" type="text" value="${esc(s.duration)}" placeholder="HH:MM" data-field="duration">
+        <span class="print-only">${esc(s.duration)}</span>
+      </td>
+      <td><div style="position:relative;display:flex;align-items:center;">
+        <input class="time-input screen-only${callValid ? '' : ' invalid'}${inheritedClass}" type="text" value="${callTimeVal}" placeholder="HH:MM" data-field="callTime" data-inherited="${sched.isInherited}" style="padding-right: 18px;">
+        <span class="print-only">${callTimeVal}</span>
+        ${pinIcon}
+      </div></td>
+      <td class="end-time">${endTimeStr}</td>
+      <td class="running-time hide-tablet">${formatDuration(runTime)}</td>
+      <td class="col-actions"><button class="actions-btn" title="Actions">&#x22EF;</button></td>
+    </tr>`;
+  }
+
+  // ── Event Binding: Table ───────────────────────
+  let lastCheckedId = null;
+
+  export function initTableDelegation() {
+    const selectAll = $('selectAll');
+    if (selectAll) {
+      selectAll.addEventListener('change', e => {
+        if (e.target.checked) {
+          state.shots.forEach(s => state.selectedIds.add(s.id));
+        } else {
+          state.selectedIds.clear();
+        }
+        updateSelectionUI();
+        render(); // Re-render to show checked rows
+      });
+    }
+
+    dom.shotBody.addEventListener('change', async e => {
+      const target = e.target;
+      if (target.matches('.row-checkbox')) {
+        const id = target.dataset.id;
+        const checked = target.checked;
+        if (e.shiftKey && lastCheckedId) {
+          const rows = Array.from(dom.shotBody.querySelectorAll('tr[data-id]'));
+          const startIdx = rows.findIndex(r => r.dataset.id === lastCheckedId);
+          const endIdx = rows.findIndex(r => r.dataset.id === id);
+          if (startIdx !== -1 && endIdx !== -1) {
+            const min = Math.min(startIdx, endIdx);
+            const max = Math.max(startIdx, endIdx);
+            for (let i = min; i <= max; i++) {
+              const rowId = rows[i].dataset.id;
+              if (checked) state.selectedIds.add(rowId);
+              else state.selectedIds.delete(rowId);
+              rows[i].querySelector('.row-checkbox').checked = checked;
+              rows[i].classList.toggle('selected', checked);
+            }
+          }
+        } else {
+          if (checked) state.selectedIds.add(id);
+          else state.selectedIds.delete(id);
+          target.closest('tr').classList.toggle('selected', checked);
+        }
+        lastCheckedId = id;
+        updateSelectionUI();
+      }
+
+      if (target.matches('select[data-field]')) {
+        const row = target.closest('tr');
+        const shot = state.shots.find(s => s.id === row.dataset.id);
+        if (!shot) return;
+        const field = target.dataset.field;
+
+        if (target.value === '__custom__') {
+          const labels = { shotSize: 'Shot Size', lens: 'Lens', movement: 'Movement' };
+          const customVal = await customPrompt(`Enter custom ${labels[field] || field}:`);
+          if (customVal && customVal.trim()) {
+            const trimmed = customVal.trim();
+            if (state.acSets[field]) { state.acSets[field].add(trimmed); saveAutocomplete(); }
+            applyBulkEdit(shot.id, field, trimmed);
+            save(); render();
+          } else {
+            target.value = shot[field] || '';
+          }
+          return;
+        }
+
+        if (field === 'blockType') {
+          applyBulkEdit(shot.id, 'blockType', target.value);
+          const lbl = row.querySelector('.block-label');
+          if (lbl) lbl.style.display = target.value === 'CUSTOM' ? '' : 'none';
+          save(); render();
+        } else {
+          applyBulkEdit(shot.id, field, target.value);
+          save(); render();
+        }
+      }
+    });
+
+    dom.shotBody.addEventListener('focusin', e => {
+      const target = e.target;
+      if (target.matches('[contenteditable="true"]')) {
+        const field = target.dataset.field;
+        if (field === 'characters' || field === 'location' || field === 'props') {
+          cancelAutocompleteHide();
+          showAutocomplete(target, field);
+        }
+      }
+      if (target.matches('.time-input[data-field="callTime"]')) {
+        if (target.dataset.inherited === 'true') {
+          target.value = '';
+          target.classList.remove('inherited');
+        }
+      }
+    });
+
+    dom.shotBody.addEventListener('input', e => {
+      const target = e.target;
+      if (target.matches('[contenteditable="true"]')) {
+        if (isAutocompleteActiveFor(target)) filterAutocomplete();
+      }
+    });
+
+    dom.shotBody.addEventListener('focusout', e => {
+      const target = e.target;
+      if (target.matches('[contenteditable="true"]')) {
+        const field = target.dataset.field;
+        if (field === 'characters' || field === 'location' || field === 'props') {
+          scheduleAutocompleteHide();
+        }
+        const row = target.closest('tr');
+        if (row) {
+          const id = row.dataset.id;
+          const shot = state.shots.find(s => s.id === id);
+          if (shot) { 
+            const val = target.textContent.trim();
+            applyBulkEdit(id, field, val);
+            
+            if (field === 'characters' || field === 'props') {
+              let changed = false;
+              val.split(',').forEach(part => {
+                const trimmed = part.trim();
+                if (trimmed && !state.acSets[field].has(trimmed)) {
+                  state.acSets[field].add(trimmed);
+                  changed = true;
+                }
+              });
+              if (changed) saveAutocomplete();
+            } else if (field === 'location') {
+              if (val && !state.acSets.location.has(val)) {
+                state.acSets.location.add(val);
+                saveAutocomplete();
+              }
+            }
+            
+            save(); render(); 
+          }
+        }
+      }
+
+      if (target.matches('.duration-input')) {
+        const row = target.closest('tr');
+        const shot = state.shots.find(s => s.id === row.dataset.id);
+        if (shot) {
+          const normalized = normalizeDuration(target.value.trim());
+          applyBulkEdit(shot.id, 'duration', normalized);
+          target.value = normalized;
+          save(); render();
+        }
+      }
+
+      if (target.matches('.block-label')) {
+        const row = target.closest('tr');
+        const shot = state.shots.find(s => s.id === row.dataset.id);
+        if (shot) { applyBulkEdit(shot.id, 'label', target.textContent.trim()); save(); }
+      }
+
+      if (target.matches('.time-input[data-field="callTime"]')) {
+        const row = target.closest('tr');
+        const shot = state.shots.find(s => s.id === row.dataset.id);
+        if (shot) {
+          const raw = target.value.trim();
+          if (raw === '') {
+            applyBulkEdit(shot.id, 'callTime', '');
+          } else {
+            const normalized = normalizeTime(raw);
+            if (!isValidTime(normalized)) {
+              target.classList.add('invalid');
+              return;
+            }
+            applyBulkEdit(shot.id, 'callTime', normalized);
+            target.value = normalized;
+            target.classList.remove('invalid');
+          }
+          save(); render();
+        }
+      }
+    });
+
+    dom.shotBody.addEventListener('keydown', e => {
+      const target = e.target;
+      if (target.matches('[contenteditable="true"]')) {
+        if (handleAutocompleteKey(e, target)) return;
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); target.blur(); }
+      }
+      if (target.matches('.duration-input') || target.matches('.block-label') || target.matches('.time-input[data-field="callTime"]')) {
+        if (e.key === 'Enter') { e.preventDefault(); target.blur(); }
+      }
+    });
+
+    dom.shotBody.addEventListener('click', e => {
+      const target = e.target;
+      
+      const priorityLabel = target.closest('.priority-label');
+      if (priorityLabel) {
+        const id = priorityLabel.closest('tr').dataset.id;
+        const shot = state.shots.find(s => s.id === id);
+        if (shot) {
+          const i = PRIORITY_CYCLE.indexOf(shot.priority);
+          shot.priority = PRIORITY_CYCLE[(i+1) % PRIORITY_CYCLE.length];
+          save(); render();
+        }
+        return;
+      }
+
+      const storyboardCell = target.closest('.storyboard-cell');
+      if (storyboardCell) {
+        const id = storyboardCell.dataset.id;
+        if (!id) return; 
+        const shot = state.shots.find(s => s.id === id);
+        if (!shot) return;
+        if (shot.storyboard) {
+          openLightbox(id);
+        } else {
+          state.currentStoryboardId = id;
+          dom.fileInput.click();
+        }
+        return;
+      }
+
+      const actionsBtn = target.closest('.actions-btn');
+      if (actionsBtn) {
+        e.stopPropagation();
+        const row = actionsBtn.closest('tr');
+        state.contextRowId = row.dataset.id;
+        showContextMenu(e.clientX, e.clientY);
+        return;
+      }
+    });
+
+    dom.shotBody.addEventListener('mousedown', e => {
+      const handle = e.target.closest('.drag-handle');
+      if (handle) initDrag(e, handle);
+    });
+
+    dom.shotBody.addEventListener('touchstart', e => {
+      const handle = e.target.closest('.drag-handle');
+      if (handle) initTouchDrag(e, handle);
+    }, { passive: false });
+  }
+
+  // ── File Input (Storyboard) ────────────────────
+  dom.fileInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file || !state.currentStoryboardId) return;
+
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX = 400;
+        let w = img.width, h = img.height;
+        if (w > MAX || h > MAX) {
+          if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+          else { w = Math.round(w * MAX / h); h = MAX; }
+        }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+
+        const shot = state.shots.find(s => s.id === state.currentStoryboardId);
+        if (shot) {
+          shot.storyboard = dataUrl;
+          save();
+          render();
+          // If dom.lightbox is open (Replace flow), refresh it
+          if (dom.lightbox.classList.contains('lb-visible')) {
+            openLightbox(state.currentStoryboardId);
+          }
+        }
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+    dom.fileInput.value = '';
+  });
+
+  // ── Context Menu ───────────────────────────────
+  export function showContextMenu(x, y) {
+    dom.contextMenu.style.left = Math.min(x, window.innerWidth - 160) + 'px';
+    dom.contextMenu.style.top = Math.min(y, window.innerHeight - 140) + 'px';
+    dom.contextMenu.classList.add('visible');
+  }
+
+  export function hideContextMenu() {
+    dom.contextMenu.classList.remove('visible');
+    state.contextRowId = null;
+  }
+
+  document.addEventListener('click', hideContextMenu);
+  document.addEventListener('contextmenu', e => {
+    const row = e.target.closest('tr[data-id]');
+    if (row) {
+      e.preventDefault();
+      state.contextRowId = row.dataset.id;
+      showContextMenu(e.clientX, e.clientY);
+    }
+  });
+
+  $('cmDuplicate').addEventListener('click', () => {
+    if (!state.contextRowId) return;
+    const src = state.shots.find(s => s.id === state.contextRowId);
+    if (src) {
+      const idx = state.shots.indexOf(src);
+      const dup = createShot({ ...src, id: uid(), num: String(state.shots.length + 1), callTime: '' });
+      state.shots.splice(idx + 1, 0, dup);
+      save(); render();
+    }
+  });
+
+  $('cmInsertAbove').addEventListener('click', () => {
+    if (!state.contextRowId) return;
+    const idx = state.shots.findIndex(s => s.id === state.contextRowId);
+    if (idx >= 0) {
+      const src = state.shots[idx];
+      const defaultNum = src ? src.num : '';
+      const shotsInScene = state.shots.filter(s => s.kind === 'shot' && s.num === defaultNum);
+      let defaultShot = '';
+      if (shotsInScene.length > 0) {
+        let maxShotVal = 0;
+        shotsInScene.forEach(s => {
+          const val = parseInt(s.shot, 10);
+          if (!isNaN(val) && val > maxShotVal) {
+            maxShotVal = val;
+          }
+        });
+        defaultShot = String(maxShotVal + 1);
+      } else {
+        defaultShot = '1';
+      }
+      state.shots.splice(idx, 0, createShot({ num: defaultNum, shot: defaultShot }));
+      save(); render();
+    }
+  });
+
+  $('cmInsertBelow').addEventListener('click', () => {
+    if (!state.contextRowId) return;
+    const idx = state.shots.findIndex(s => s.id === state.contextRowId);
+    if (idx >= 0) {
+      const src = state.shots[idx];
+      const defaultNum = src ? src.num : '';
+      const shotsInScene = state.shots.filter(s => s.kind === 'shot' && s.num === defaultNum);
+      let defaultShot = '';
+      if (shotsInScene.length > 0) {
+        let maxShotVal = 0;
+        shotsInScene.forEach(s => {
+          const val = parseInt(s.shot, 10);
+          if (!isNaN(val) && val > maxShotVal) {
+            maxShotVal = val;
+          }
+        });
+        defaultShot = String(maxShotVal + 1);
+      } else {
+        defaultShot = '1';
+      }
+      state.shots.splice(idx + 1, 0, createShot({ num: defaultNum, shot: defaultShot }));
+      save(); render();
+    }
+  });
+
+  $('cmDelete').addEventListener('click', () => {
+    if (!state.contextRowId) return;
+    state.shots = state.shots.filter(s => s.id !== state.contextRowId);
+    save(); render();
+  });

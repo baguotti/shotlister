@@ -1,1 +1,6 @@
+node_modules/
+dist/
+_old/
 .DS_Store
+*.log
+test_clicks.png

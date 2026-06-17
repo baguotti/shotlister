@@ -1,0 +1,17 @@
+{
+  "name": "Shotlister",
+  "short_name": "Shotlister",
+  "description": "Offline PWA shot list manager for film production",
+  "display": "standalone",
+  "start_url": ".",
+  "background_color": "#0e0f11",
+  "theme_color": "#0e0f11",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
