@@ -672,71 +672,34 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
     grid.innerHTML = sorted.map(p => `
       <div class="project-card" data-id="${p.id}">
         <div class="pc-title">${esc(p.title || 'Untitled')}</div>
-        <div class="pc-meta">${p.count} items · Last edited: ${new Date(p.updatedAt).toLocaleDateString()}</div>
-        <button class="pc-dup" data-dup="${p.id}" title="Duplicate Project">📄</button>
-        <button class="pc-del" data-del="${p.id}" title="Delete Project">🗑</button>
+        <div class="pc-meta">${p.count} items · Last edited: ${new Date(p.updatedAt).toLocaleDateString()} ${new Date(p.updatedAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</div>
+        <button class="pc-dup" data-dup="${p.id}" title="Duplicate project"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: block;"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></button>
+        <button class="pc-del" data-del="${p.id}" title="Delete project"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: block;"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg></button>
       </div>
     `).join('');
   }
 
   export function seedDefaults() {
     setShots([
-      createBlock({ blockType: 'CUSTOM', label: 'SETUP/ HMU', duration: '', callTime: '08:00' }),
-      createShot({ num: '1', characters: 'F', location: 'Changing Room', description: 'Fitzroy is recording a message to his followers', props: 'iPhone to record - not sweaty', duration: '0:10' }),
-      createBlock({ blockType: 'CUSTOM', label: 'SETUP/BUFFER', duration: '0:15' }),
-      createShot({ num: '2a', characters: 'F', location: 'Changing Room', description: 'Wide of F. conversation with Lisa', props: 'not sweaty', duration: '0:05' }),
-      createShot({ num: '2a', characters: 'F', location: 'Changing Room', description: 'Close of F. conversation with Lisa - line drops, he gets up looks for signal', props: 'not sweaty, vapes', duration: '0:10' }),
-      createShot({ num: '2a', characters: '', location: 'Changing Room', description: 'Insert shot of phone - dialing Emma', props: '', duration: '0:05' }),
-      createShot({ num: '2a', characters: 'F', location: 'Changing Room', description: "Fitz paces around the room vaping as he's waiting for Emma to pick up - he is uncomfortable", props: 'not sweaty, vapes', duration: '0:05' }),
-      createShot({ num: '2a', characters: 'F', location: 'Changing Room', description: 'F. calls Emma and conversation follows - line drops - KNOCK', props: 'not sweaty, vapes', duration: '0:10' }),
-      createShot({ num: '2b', characters: 'F + Ana', location: 'Changing Room - at the door', description: '', props: '', duration: '' }),
-      createShot({ num: '2b', characters: 'F + Ana', location: 'Changing Room - at the door', description: 'Fitz approaches the door - conversation with Ana, then shuts the door', props: '', duration: '0:15' }),
-      createShot({ num: '2c', characters: 'F', location: 'Changing Room - by the small window', description: 'Insert shots - Lisa is calling again - CU of phone - F. silences it - then calls Emma again', props: '', duration: '0:10' }),
-      createShot({ num: '2c', characters: '', location: 'Changing Room - by the small window', description: 'Fitz paces in the room and then leaves the room to find some signal, jump cuts', props: '', duration: '0:05' }),
-      createShot({ num: '2c', characters: 'F', location: 'Changing Room - by the small window', description: "Phone rings, it's Lisa, F. silences it - then calls Emma again.", props: '', duration: '0:05' }),
-      createShot({ num: '2d', characters: '', location: '', description: 'Fitz moves towards the back of the room - Lisa is calling again', props: '', duration: '0:05' }),
-      createShot({ num: '2d', characters: '', location: 'Changing Room - back of Studio 7', description: 'Insert shot - phone', props: '', duration: '0:05' }),
-      createShot({ num: '2d', characters: 'F', location: 'Changing Room - back of Studio 7', description: 'Call with Lisa again - knocks on the door - Fitz drops the call', props: '', duration: '0:10' }),
-      createShot({ num: '2d', characters: 'F', location: 'Changing Room - back of Studio 7', description: 'F. collects himself', props: '', duration: '0:05' }),
-      createShot({ num: '2d', characters: 'F', location: 'Changing Room - back of Studio 7', description: 'F. leaves towards the corridors', props: '', duration: '0:05' }),
-      createShot({ num: '3', characters: 'F + A', location: 'Corridors', description: 'Fitz opens the door - Ana is there - they start going through the programme - Walk and talk', props: '', duration: '0:05' }),
-      createShot({ num: '3', characters: 'F + A + Repairman', location: 'Corridors', description: 'Fitz asks about the repairman - MASTER', props: '', duration: '0:10' }),
-      createShot({ num: '3', characters: 'R', location: 'Corridors', description: 'Repairman coverage', props: '', duration: '0:10' }),
-      createShot({ num: '3', characters: 'F', location: 'Corridors', description: 'Fitz coverage', props: '', duration: '0:05' }),
-      createBlock({ blockType: 'LUNCH', label: 'LUNCH', duration: '1:00' }),
-      createBlock({ blockType: 'CUSTOM', label: 'SETUP/BUFFER', duration: '0:20' }),
-      createShot({ num: '4', characters: 'F + A', location: 'Corridors', description: 'They start going through the corridors - walk and talk', props: '', duration: '' }),
-      createShot({ num: '4', characters: 'F + A', location: 'Corridors', description: 'They start going through the corridor - walk and talk', props: '', duration: '0:20' }),
-      createShot({ num: '4', characters: 'F + A', location: 'Corridors', description: 'Ana gets a call. They stop, she leaves', props: '', duration: '' }),
-      createShot({ num: '5', characters: 'F + Repairman', location: '', description: 'Fitzroy roams the corridors - phone keeps ringing - experiment - Fitz meets the repairman in different locations', props: 'Sweaty - Treadmill', duration: '0:45' }),
-      createBlock({ blockType: 'CUSTOM', label: 'SETUP/BUFFER', duration: '0:15' }),
-      createShot({ num: '6a', characters: 'F + A', location: 'Corridors', description: 'Ana shows up from a corner - walk and talk', props: '', duration: '0:10' }),
-      createShot({ num: '6a', characters: 'F + A', location: 'Corridors', description: 'They stop, bad news F. snaps - FITZ coverage', props: '', duration: '0:10' }),
-      createShot({ num: '6a', characters: 'F + A', location: 'Corridors', description: 'They stop, bad news F. snaps - ANA coverage', props: '', duration: '0:10' }),
-      createShot({ num: '6b', characters: 'F', location: 'Corridors', description: 'F. is angered, walks until he bumps into his poster - frantic - jump cuts', props: '', duration: '0:10' }),
-      createBlock({ blockType: 'CUSTOM', label: 'SETUP/BUFFER', duration: '0:10' }),
-      createShot({ num: '6c', characters: 'F', location: 'Corridors', movement: 'Tripod?', description: 'Everything disappears - F. is breathing and calms down', props: 'Maybe wide tripod shot for contrast?', duration: '0:05' }),
-      createShot({ num: '6c', characters: 'F', location: 'Corridors', description: 'Closeup of Fitz - breathing', props: '', duration: '0:10' }),
-      createShot({ num: '6c', characters: 'F', location: 'Corridors', description: 'Poster POV', props: '', duration: '' }),
-      createShot({ num: '6c', characters: 'F', location: 'Corridors', description: 'Insert shots - hands details - poster', props: '', duration: '' }),
-      createShot({ num: '6c', characters: 'F + A', location: 'Corridors', description: 'F. collects himself, Ana calls him. He walks towards the stage', props: 'Not sweaty', duration: '0:05' }),
-      createBlock({ blockType: 'CUSTOM', label: 'SETUP/BUFFER', duration: '0:10' }),
-      createShot({ num: '7', characters: 'F', location: 'Corridors', movement: 'Smooth Handheld', description: 'F. confidently walks towards the stage', props: 'Not sweaty', duration: '' }),
-      createShot({ num: '7', characters: 'F + Repairman', location: 'Corridors', movement: 'Smooth Handheld', description: 'Says "keep it up lad"', props: 'Not sweaty', duration: '' }),
-      createShot({ num: '7', characters: 'Repairman', location: 'Corridors', movement: 'Smooth Handheld', description: 'Scrolling on the phone', props: '', duration: '0:25' }),
-      createShot({ num: '7', characters: 'F + Runner', location: 'Corridors', description: 'Collision with runner', props: 'Stained shirt', duration: '' }),
-      createShot({ num: '7', characters: 'F', location: 'Corridors', description: 'F. flips, walks back, in agenr, frantic', props: 'Stained shirt', duration: '' }),
-      createBlock({ blockType: 'CUSTOM', label: 'SETUP/BUFFER', duration: '0:20' }),
-      createShot({ num: '8', characters: 'F + A', location: 'Corridors/ Changing Room - at the door', description: 'Ana chases him - MASTER', props: 'Stained shirt - very sweaty', duration: '0:20' }),
-      createShot({ num: '8', characters: 'F + A', location: 'Changing Room - at the door', description: 'Ana tells him off and leaves - MASTER', props: 'Stained shirt - very sweaty', duration: '0:20' }),
-      createShot({ num: '8', characters: 'A', location: 'Changing Room - at the door', description: 'Ana Coverage', props: 'Stained shirt - very sweaty', duration: '0:05' }),
-      createShot({ num: '8', characters: 'F', location: 'Changing Room - at the door', description: 'Fitz Coverage', props: 'Stained shirt - very sweaty', duration: '0:05' }),
-      createShot({ num: '8', characters: 'F', location: 'Changing Room - at the door', description: 'Fitz collects himself alone - button his jacket to cover the stain', props: 'Stained shirt - very sweaty', duration: '0:05' }),
-      createBlock({ blockType: 'CUSTOM', label: 'SETUP/BUFFER', duration: '0:20' }),
-      createShot({ num: '9', characters: 'F', location: 'Towards Stage', description: 'F. is waiting and listens to Ana\'s words', props: 'Stained shirt - very sweaty', duration: '0:10' }),
-      createShot({ num: '9', characters: 'F', location: 'Towards Stage', description: 'F. is waiting and listens to Ana\'s words - CU', props: 'Stained shirt - very sweaty', duration: '0:10' })
+      createBlock({ blockType: 'CUSTOM', label: 'CREW CALL / SETUP', duration: '', callTime: '09:00' }),
+      // Scene 1: Cafe - Alice & Bob
+      createShot({ num: '1', shot: '1', priority: 'medium', location: 'Cafe', characters: 'Alice, Bob', description: 'Wide master shot of Alice and Bob discussing the mystery map', props: 'Old map, coffee cups', duration: '0:15', shotSize: 'WIDE', movement: 'STATIC' }),
+      createShot({ num: '1', shot: '2', priority: 'low', location: 'Cafe', characters: 'Alice', description: 'Close up on Alice as she reveals the secret location', props: 'Old map', duration: '0:10', shotSize: 'CU', lens: '50mm', movement: 'STATIC' }),
+      createShot({ num: '1', shot: '3', priority: 'low', location: 'Cafe', characters: 'Bob', description: 'Reaction close up on Bob, looking shocked', props: 'Coffee cup', duration: '0:08', shotSize: 'CU', lens: '85mm', movement: 'STATIC' }),
+      
+      createBlock({ blockType: 'CUSTOM', label: 'LOCATION MOVE / SETUP', duration: '0:20' }),
+      
+      // Scene 2: Park - Bob alone
+      createShot({ num: '2', shot: '1', priority: 'high', location: 'Park', characters: 'Bob', description: 'Tracking shot of Bob walking along the path, searching', props: 'Mobile phone', duration: '0:15', shotSize: 'MCU', lens: '35mm', movement: 'HANDHELD' }),
+      createShot({ num: '2', shot: '2', priority: 'medium', location: 'Park', characters: 'Bob', description: 'Insert shot of Bob finding the marked tree', props: 'Compass', duration: '0:05', shotSize: 'ECU', lens: '85mm', movement: 'STATIC' }),
+      
+      createBlock({ blockType: 'LUNCH', label: 'LUNCH BREAK', duration: '1:00' }),
+      
+      // Scene 3: Cafe - Alice waiting
+      createShot({ num: '3', shot: '1', priority: 'medium', location: 'Cafe', characters: 'Alice', description: 'Medium shot of Alice pacing near the window, checking her watch', props: 'Wristwatch', duration: '0:10', shotSize: 'MS', lens: '35mm', movement: 'DOLLY' }),
+      createShot({ num: '3', shot: '2', priority: 'low', location: 'Cafe', characters: 'Alice', description: 'Tight close up on Alice looking anxious', props: '', duration: '0:07', shotSize: 'CU', lens: '50mm', movement: 'STATIC' })
     ]);
-    dom.projectTitle.textContent = 'Fitzroy Scene List';
+    dom.projectTitle.textContent = 'Untitled Project';
     save();
   }
 

@@ -24,17 +24,19 @@
 <div id="app">
 
   <!-- ── HOMEPAGE VIEW ── -->
-  <div id="homeView" style="display:none; flex:1; overflow-y:auto; padding: 40px; flex-direction:column; background:var(--bg-0);">
-    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:20px; margin-bottom:30px;">
-      <h1 style="font-family:var(--font-mono); font-size:24px; color:var(--text-1); margin:0;">Shotlister Projects</h1>
-      <div style="display:flex; gap:12px; align-items:center;">
-        <button class="btn" id="btnSyncSettingsHome" aria-label="Cloud Sync Settings" style="display:flex; align-items:center; gap:6px;">☁️ <span id="syncStatusTextHome">Offline Mode</span></button>
-        <button class="btn" id="btnImportHome" style="background:var(--bg-2); color:var(--text-1); border-color:var(--border);">↓ Import Project</button>
-        <button class="btn" id="btnNewProject" style="background:var(--accent); color:var(--bg-0); border-color:var(--accent); font-weight:bold;">+ New Project</button>
-        <input type="file" id="importHomeInput" accept=".json" style="display:none;">
+  <div id="homeView" style="display:none; flex:1; overflow-y:auto; padding: 32px 40px; flex-direction:column; background:var(--bg-0);">
+    <div class="home-container">
+      <div class="home-header">
+        <h1 class="home-title">Shotlister Projects <span class="home-version">BETA 0.1.1</span></h1>
+        <div class="home-actions">
+          <button class="btn btn-sync" id="btnSyncSettingsHome" aria-label="Cloud Sync Settings">☁️ <span id="syncStatusTextHome" class="hide-mobile">Offline Mode</span></button>
+          <button class="btn btn-import" id="btnImportHome">↓ Import Project</button>
+          <button class="btn btn-primary" id="btnNewProject">+ New Project</button>
+          <input type="file" id="importHomeInput" accept=".json" style="display:none;">
+        </div>
       </div>
+      <div id="projectGrid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:16px;"></div>
     </div>
-    <div id="projectGrid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:20px;"></div>
   </div>
 
   <!-- ── EDITOR VIEW ── -->
