@@ -53,10 +53,22 @@
       <button data-preset="XL" title="Cinematic">XL</button>
     </div>
     <button class="btn" id="btnGroupMode">⊞ Group</button>
+    <button class="btn" id="btnViewMode" title="Toggle Grid/List View">▦ Grid</button>
     <button class="btn" id="btnViewToggle">⚙️ Custom</button>
     <button class="btn" id="btnExportCSV">↓ CSV</button>
     <button class="btn" id="btnPrint">⎙ Print</button>
     <button class="btn" id="btnThemeToggle">◐ Theme</button>
+  </div>
+
+  <!-- Grid Settings Bar -->
+  <div class="grid-settings-bar" id="gridSettingsBar" style="display: none; padding: 6px 16px; background: var(--bg-1); border-bottom: 1px solid var(--border); gap: 16px; align-items: center; font-family: var(--font-mono); font-size: 10px; overflow-x: auto; white-space: nowrap; user-select: none;">
+    <span style="color: var(--text-2); text-transform: uppercase; letter-spacing: 0.5px;">Show/Hide:</span>
+    <label style="cursor: pointer; display: flex; align-items: center; gap: 4px;"><input type="checkbox" class="row-checkbox" id="toggleGridHeader" checked style="margin:0;"> Scene/Shot</label>
+    <label style="cursor: pointer; display: flex; align-items: center; gap: 4px;"><input type="checkbox" class="row-checkbox" id="toggleGridLocation" checked style="margin:0;"> Location</label>
+    <label style="cursor: pointer; display: flex; align-items: center; gap: 4px;"><input type="checkbox" class="row-checkbox" id="toggleGridSchedule" checked style="margin:0;"> Schedule/Duration</label>
+    <label style="cursor: pointer; display: flex; align-items: center; gap: 4px;"><input type="checkbox" class="row-checkbox" id="toggleGridDescription" checked style="margin:0;"> Description</label>
+    <label style="cursor: pointer; display: flex; align-items: center; gap: 4px;"><input type="checkbox" class="row-checkbox" id="toggleGridCastProps" checked style="margin:0;"> Cast & Props</label>
+    <label style="cursor: pointer; display: flex; align-items: center; gap: 4px;"><input type="checkbox" class="row-checkbox" id="toggleGridTech" checked style="margin:0;"> Size/Lens/Movement</label>
   </div>
 
   <!-- Timeline Bar -->
@@ -66,18 +78,10 @@
     <span class="timeline-times" id="timelineTimes"></span>
   </div>
 
-  <!-- Filter Bar -->
-  <div class="filter-bar" id="filterBar">
-    <label>Filter:</label>
-    <select id="filterLocation"><option value="">Location</option></select>
-    <input type="text" id="filterCharacter" placeholder="Character…">
-    <select id="filterPriority">
-      <option value="">Priority</option>
-      <option value="off">Off</option>
-      <option value="low">Low</option>
-      <option value="high">High</option>
-    </select>
-  </div>
+
+
+  <!-- Grid (grid view) -->
+  <div class="grid-wrap" id="gridWrap" style="display:none;"></div>
 
   <!-- Table (list view) -->
   <div class="table-wrap" id="tableWrap">
@@ -86,18 +90,18 @@
         <tr id="headerRow">
           <th class="col-drag"></th>
           <th class="col-select"><input type="checkbox" id="selectAll" title="Select All"></th>
-          <th class="col-storyboard">
-            <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
-              Board
-              <select id="boardRatioSelect" style="font-family: var(--font-mono); font-size: 9px; padding: 2px 6px; border: 1px solid var(--border); border-radius: 12px; background: transparent; color: var(--text-2); outline: none; cursor: pointer; text-align: center;">
-                <option value="auto">Auto</option>
-                <option value="16/9">16:9</option>
-                <option value="2.35/1">2.35:1</option>
-                <option value="2/1">2:1</option>
-                <option value="4/3">4:3</option>
-                <option value="1/1">1:1</option>
-              </select>
+          <th class="col-storyboard" style="position: relative;">
+            <div style="display: flex; align-items: center; gap: 4px; padding-top: 2px;">
+              BOARD <span style="font-size: 8px; color: var(--text-2);">▼</span>
             </div>
+            <select id="boardRatioSelect" style="position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer;">
+              <option value="auto">Auto</option>
+              <option value="16/9">16:9</option>
+              <option value="2.35/1">2.35:1</option>
+              <option value="2/1">2:1</option>
+              <option value="4/3">4:3</option>
+              <option value="1/1">1:1</option>
+            </select>
           </th>
           <th class="col-num">SCENE</th>
           <th class="col-shotnum">SHOT</th>
@@ -124,7 +128,7 @@
   <dialog class="custom-modal" id="settingsView" style="max-height: 80vh; max-width: 600px;"></dialog>
 
   <!-- Scene Summary Panel -->
-  <div id="sceneSummaryPanel" style="display:none; padding: 8px 12px; background: var(--bg-1); border-top: 1px solid var(--border); overflow-x: auto; white-space: nowrap; font-family: var(--font-mono); font-size: 11px; gap: 8px; align-items: center;"></div>
+  <div id="sceneSummaryPanel" style="display:flex; padding: 8px 12px; background: var(--bg-1); border-top: 1px solid var(--border); overflow-x: auto; white-space: nowrap; font-family: var(--font-mono); font-size: 11px; gap: 8px; align-items: center;"></div>
 
   <!-- Footer -->
   <div class="footer" id="footer">
@@ -138,7 +142,7 @@
     <div class="stat-sep"></div>
     <div class="stat">Wrap: <span class="stat-val" id="statWrap">--:--</span></div>
     <div class="stat">Overrun: <span class="stat-val" id="statOverrun">00:00</span></div>
-    <button class="add-row-btn" id="btnToggleSummary" style="margin-left:auto; background:transparent; border-color:transparent; color:var(--text-1);">∑ Summary</button>
+    <button class="add-row-btn active" id="btnToggleSummary" style="margin-left:auto; background:transparent; border-color:transparent; color:var(--text-1);">∑ Summary</button>
     <div class="spacer"></div>
     <button class="add-row-btn" id="btnAddBlock" style="margin-right:8px; background:var(--bg-2); border-color:var(--border); color:var(--text-1);">+ Add Block</button>
     <button class="add-row-btn" id="btnAddRow">+ Add Shot</button>
@@ -159,6 +163,10 @@
 <div id="lightbox">
   <div class="lb-backdrop" id="lbBackdrop"></div>
   <div class="lb-header">
+    <div class="lb-actions">
+      <button class="lb-btn lb-btn-replace" id="lbReplace">Replace</button>
+      <button class="lb-btn lb-btn-delete" id="lbDelete">Delete</button>
+    </div>
     <button class="lb-close" id="lbClose" title="Close (Esc)">✕</button>
   </div>
   <div class="lb-img-wrap">
@@ -174,12 +182,6 @@
       </div>
     </div>
     <button class="lb-arrow lb-arrow-next" id="lbNext" title="Next (→)">&gt;</button>
-  </div>
-  <div class="lb-footer">
-    <div class="lb-actions">
-      <button class="lb-btn lb-btn-replace" id="lbReplace">Replace</button>
-      <button class="lb-btn lb-btn-delete" id="lbDelete">Delete</button>
-    </div>
   </div>
 </div>
 

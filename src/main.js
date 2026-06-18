@@ -1,7 +1,7 @@
 import { dom, $ } from './dom.js';
-import { state, PRESETS, createShot, createBlock, LS_KEY, LS_TITLE_KEY, LS_PROJECTS_KEY, LS_LAST_PROJ_KEY, LS_THEME_KEY, LS_PRESET_KEY, LS_RATIO_KEY, uid, GROUP_MODES, clearSelection } from './state.js';
+import { state, PRESETS, createShot, createBlock, LS_KEY, LS_TITLE_KEY, LS_PROJECTS_KEY, LS_LAST_PROJ_KEY, LS_THEME_KEY, LS_PRESET_KEY, LS_RATIO_KEY, LS_GRID_VIS_KEY, uid, GROUP_MODES, clearSelection } from './state.js';
 import { cascadeSchedule, formatDuration, formatOverrun, parseDuration, formatTime } from './schedule.js';
-import { renderTable, hideContextMenu, initTableDelegation } from './render-table.js';
+import { renderTable, renderGrid, hideContextMenu, initTableDelegation } from './render-table.js';
 import { renderSettings } from './render-settings.js';
 import { renderTimeline } from './timeline.js';
 import { loadAutocomplete, extractAutocompleteFromShots } from './autocomplete.js';
@@ -39,7 +39,8 @@ import { getProject, putProject, deleteProject } from './db.js';
   // Sizes are derived from the live dom.tableWrap height × preset scale,
   // so they reflow automatically when the window is resized.
   export function computePresetSizes() {
-    const ch = dom.tableWrap.clientHeight || Math.round(window.innerHeight * 0.65);
+    const wrapper = state.viewMode === 'grid' ? dom.gridWrap : dom.tableWrap;
+    const ch = wrapper.clientHeight || Math.round(window.innerHeight * 0.65);
     const scale = PRESETS[state.currentPreset].scale;
     const rowH  = Math.max(30, Math.round(ch * BASE_ROW_FACTOR * scale));
     const thumbSz = Math.max(20, Math.min(rowH - 6, Math.round(rowH * 0.78)));
@@ -47,8 +48,16 @@ import { getProject, putProject, deleteProject } from './db.js';
   }
 
   export function applyPresetLayout() {
-    if (state.viewMode !== 'list') return;
     const { rowH, thumbSz } = computePresetSizes();
+    const scale = PRESETS[state.currentPreset].scale;
+
+    if (state.viewMode === 'grid') {
+      document.documentElement.style.setProperty('--board-scale', scale);
+      document.documentElement.style.setProperty('--grid-font-sz', Math.max(10, Math.min(13, Math.round(30 * 0.28 * Math.sqrt(scale)))) + 'px');
+      return;
+    }
+
+    if (state.viewMode !== 'list') return;
     
     // Use a 1.6 aspect ratio for width so thumbnails are appropriately cinematic and much larger
     const thumbW = Math.round(thumbSz * 1.6);
@@ -155,26 +164,39 @@ import { getProject, putProject, deleteProject } from './db.js';
     } catch(e) { /* ignore */ }
   }
 
+  export function loadGridVis() {
+    try {
+      const vis = localStorage.getItem(LS_GRID_VIS_KEY);
+      if (vis) {
+        state.gridVisibility = { ...state.gridVisibility, ...JSON.parse(vis) };
+      }
+      if (dom.toggleGridHeader) dom.toggleGridHeader.checked = state.gridVisibility.header;
+      if (dom.toggleGridLocation) dom.toggleGridLocation.checked = state.gridVisibility.location;
+      if (dom.toggleGridSchedule) dom.toggleGridSchedule.checked = state.gridVisibility.schedule;
+      if (dom.toggleGridDescription) dom.toggleGridDescription.checked = state.gridVisibility.description;
+      if (dom.toggleGridCastProps) dom.toggleGridCastProps.checked = state.gridVisibility.castProps;
+      if (dom.toggleGridTech) dom.toggleGridTech.checked = state.gridVisibility.tech;
+    } catch(e) { /* ignore */ }
+  }
+
+  export function saveGridVis() {
+    state.gridVisibility = {
+      header: dom.toggleGridHeader.checked,
+      location: dom.toggleGridLocation.checked,
+      schedule: dom.toggleGridSchedule.checked,
+      description: dom.toggleGridDescription.checked,
+      castProps: dom.toggleGridCastProps.checked,
+      tech: dom.toggleGridTech.checked
+    };
+    localStorage.setItem(LS_GRID_VIS_KEY, JSON.stringify(state.gridVisibility));
+    render();
+  }
+
   // ── Filtering ──────────────────────────────────
   export function getFilteredShots() {
-    let result = state.shots;
-    const loc = dom.filterLocation.value;
-    const chr = dom.filterCharacter.value.trim().toLowerCase();
-    const pri = dom.filterPriority.value;
-
-    if (loc) result = result.filter(s => s.location === loc);
-    if (chr) result = result.filter(s => s.characters.toLowerCase().includes(chr));
-    if (pri) result = result.filter(s => s.priority === pri);
-
-    return result;
+    return state.shots;
   }
 
-  export function updateLocationFilter() {
-    const locs = [...new Set(state.shots.map(s => s.location).filter(Boolean))].sort();
-    const cur = dom.filterLocation.value;
-    dom.filterLocation.innerHTML = '<option value="">Location</option>' +
-      locs.map(l => `<option value="${esc(l)}"${l===cur?' selected':''}>${esc(l)}</option>`).join('');
-  }
 
   export function esc(s) {
     const d = document.createElement('div');
@@ -184,14 +206,14 @@ import { getProject, putProject, deleteProject } from './db.js';
 
   // ── Drag & Drop (mouse) ────────────────────────
   export function initDrag(e, handle) {
-    const row = handle.closest('tr');
+    const row = handle.closest('tr, .grid-card');
     state.dragSrcId = row.dataset.id;
     row.classList.add('dragging');
 
     const onMove = e2 => {
       const target = document.elementFromPoint(e2.clientX, e2.clientY);
-      const targetRow = target ? target.closest('tr[data-id]') : null;
-      dom.shotBody.querySelectorAll('tr').forEach(r => r.classList.remove('drag-over'));
+      const targetRow = target ? target.closest('tr[data-id], .grid-card[data-id]') : null;
+      document.querySelectorAll('.drag-over').forEach(r => r.classList.remove('drag-over'));
       if (targetRow && targetRow.dataset.id !== state.dragSrcId) {
         targetRow.classList.add('drag-over');
       }
@@ -201,10 +223,10 @@ import { getProject, putProject, deleteProject } from './db.js';
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
       row.classList.remove('dragging');
-      dom.shotBody.querySelectorAll('tr').forEach(r => r.classList.remove('drag-over'));
+      document.querySelectorAll('.drag-over').forEach(r => r.classList.remove('drag-over'));
 
       const target = document.elementFromPoint(e2.clientX, e2.clientY);
-      const targetRow = target ? target.closest('tr[data-id]') : null;
+      const targetRow = target ? target.closest('tr[data-id], .grid-card[data-id]') : null;
       if (targetRow && targetRow.dataset.id !== state.dragSrcId) {
         reorderShots(state.dragSrcId, targetRow.dataset.id);
       }
@@ -218,15 +240,15 @@ import { getProject, putProject, deleteProject } from './db.js';
   // ── Drag & Drop (touch) ────────────────────────
   export function initTouchDrag(e, handle) {
     e.preventDefault();
-    const row = handle.closest('tr');
+    const row = handle.closest('tr, .grid-card');
     state.dragSrcId = row.dataset.id;
     row.classList.add('dragging');
 
     const onMove = e2 => {
       const touch = e2.touches[0];
       const target = document.elementFromPoint(touch.clientX, touch.clientY);
-      const targetRow = target ? target.closest('tr[data-id]') : null;
-      dom.shotBody.querySelectorAll('tr').forEach(r => r.classList.remove('drag-over'));
+      const targetRow = target ? target.closest('tr[data-id], .grid-card[data-id]') : null;
+      document.querySelectorAll('.drag-over').forEach(r => r.classList.remove('drag-over'));
       if (targetRow && targetRow.dataset.id !== state.dragSrcId) {
         targetRow.classList.add('drag-over');
       }
@@ -236,11 +258,11 @@ import { getProject, putProject, deleteProject } from './db.js';
       document.removeEventListener('touchmove', onMove);
       document.removeEventListener('touchend', onEnd);
       row.classList.remove('dragging');
-      dom.shotBody.querySelectorAll('tr').forEach(r => r.classList.remove('drag-over'));
+      document.querySelectorAll('.drag-over').forEach(r => r.classList.remove('drag-over'));
 
       const touch = e2.changedTouches[0];
       const target = document.elementFromPoint(touch.clientX, touch.clientY);
-      const targetRow = target ? target.closest('tr[data-id]') : null;
+      const targetRow = target ? target.closest('tr[data-id], .grid-card[data-id]') : null;
       if (targetRow && targetRow.dataset.id !== state.dragSrcId) {
         reorderShots(state.dragSrcId, targetRow.dataset.id);
       }
@@ -354,9 +376,7 @@ import { getProject, putProject, deleteProject } from './db.js';
     }
   });
 
-  dom.filterLocation.addEventListener('change', render);
-  dom.filterCharacter.addEventListener('input', render);
-  dom.filterPriority.addEventListener('change', render);
+
   $('btnNewProject').addEventListener('click', async () => {
     const pid = uid();
     state.projectsList.unshift({ id: pid, title: 'Untitled Project', updatedAt: Date.now(), count: 0 });
@@ -452,6 +472,11 @@ import { getProject, putProject, deleteProject } from './db.js';
     state.selectedIds.clear();
     newShots.forEach(s => state.selectedIds.add(s.id));
     save();
+    render();
+  });
+  $('btnViewMode').addEventListener('click', () => {
+    state.viewMode = state.viewMode === 'list' ? 'grid' : 'list';
+    $('btnViewMode').innerHTML = state.viewMode === 'list' ? '▦ Grid' : '▤ List';
     render();
   });
 
@@ -654,13 +679,31 @@ import { getProject, putProject, deleteProject } from './db.js';
     cascadeSchedule();
     renderTimeline();
 
-    dom.tableWrap.classList.remove('hidden');
-    renderTable();
+    if (state.viewMode === 'grid') {
+      dom.tableWrap.classList.add('hidden');
+      dom.tableWrap.style.display = 'none';
+      dom.gridWrap.classList.remove('hidden');
+      dom.gridWrap.style.display = '';
+      dom.gridSettingsBar.style.display = 'flex';
+      renderGrid();
+    } else {
+      dom.gridWrap.classList.add('hidden');
+      dom.gridWrap.style.display = 'none';
+      dom.tableWrap.classList.remove('hidden');
+      dom.tableWrap.style.display = '';
+      dom.gridSettingsBar.style.display = 'none';
+      renderTable();
+    }
     applyPresetLayout();
   }
 
   // ── Init ───────────────────────────────────────
   loadLayout();
+  loadGridVis();
+  
+  [dom.toggleGridHeader, dom.toggleGridLocation, dom.toggleGridSchedule, dom.toggleGridDescription, dom.toggleGridCastProps, dom.toggleGridTech].forEach(t => {
+    if (t) t.addEventListener('change', saveGridVis);
+  });
   const loadedRatio = localStorage.getItem(LS_RATIO_KEY);
   if (loadedRatio) state.boardRatio = loadedRatio;
   applyBoardRatio();

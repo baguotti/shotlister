@@ -81,8 +81,12 @@ import { formatTime, formatOverrun } from './schedule.js';
       dom.lbTiming.style.display = 'none';
     }
 
-    if (shot.characters) {
-      dom.lbCast.textContent = `Cast: ${shot.characters}`;
+    const castPropsParts = [];
+    if (shot.characters) castPropsParts.push(shot.characters);
+    if (shot.props) castPropsParts.push(shot.props);
+    
+    if (castPropsParts.length) {
+      dom.lbCast.textContent = castPropsParts.join('  •  ');
       dom.lbCast.style.display = '';
     } else {
       dom.lbCast.style.display = 'none';

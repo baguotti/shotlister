@@ -1,9 +1,9 @@
 import { dom, $, customPrompt } from './dom.js';
-import { state, getSceneGroup, createShot, createBlock, PRIORITY_CYCLE, MOVEMENT_TYPES, SHOT_SIZES, LENS_OPTIONS } from './state.js';
+import { state, getSceneGroup, createShot, createBlock, PRIORITY_CYCLE, MOVEMENT_TYPES, SHOT_SIZES, LENS_OPTIONS, uid } from './state.js';
 import { parseDuration, formatDuration, formatTime, formatOverrun, isValidDuration, isValidTime, normalizeDuration, normalizeTime } from './schedule.js';
 import { openLightbox } from './lightbox.js';
 import { showAutocomplete, hideAutocomplete, handleAutocompleteKey, filterAutocomplete, isAutocompleteActiveFor, scheduleAutocompleteHide, cancelAutocompleteHide, saveAutocomplete } from './autocomplete.js';
-import { render, save, getFilteredShots, updateStats, updateLocationFilter, esc, applyPresetLayout, initDrag, initTouchDrag, applyBulkEdit, updateSelectionUI } from './main.js';
+import { render, save, getFilteredShots, updateStats, esc, applyPresetLayout, initDrag, initTouchDrag, applyBulkEdit, updateSelectionUI } from './main.js';
   // ── Render: Table ──────────────────────────────
   export function renderTable() {
     const filtered = getFilteredShots();
@@ -101,8 +101,8 @@ import { render, save, getFilteredShots, updateStats, updateLocationFilter, esc,
       };
 
       filtered.forEach(s => {
-        if (s.kind === 'shot') {
-          const sceneNum = s.num ? String(s.num).trim() : '';
+        const sceneNum = s.num ? String(s.num).trim() : '';
+        if (s.kind === 'shot' || sceneNum !== '') {
           if (sceneNum !== currentScene) {
             renderSceneSummary();
             currentScene = sceneNum;
@@ -122,7 +122,6 @@ import { render, save, getFilteredShots, updateStats, updateLocationFilter, esc,
 
     dom.shotBody.innerHTML = html;
     updateStats();
-    updateLocationFilter();
   }
 
 
@@ -254,6 +253,10 @@ import { render, save, getFilteredShots, updateStats, updateLocationFilter, esc,
   let lastCheckedId = null;
 
   export function initTableDelegation() {
+    const bind = (evt, handler, opts) => {
+      dom.shotBody.addEventListener(evt, handler, opts);
+      dom.gridWrap.addEventListener(evt, handler, opts);
+    };
     const selectAll = $('selectAll');
     if (selectAll) {
       selectAll.addEventListener('change', e => {
@@ -267,13 +270,13 @@ import { render, save, getFilteredShots, updateStats, updateLocationFilter, esc,
       });
     }
 
-    dom.shotBody.addEventListener('change', async e => {
+    bind('change', async e => {
       const target = e.target;
       if (target.matches('.row-checkbox')) {
         const id = target.dataset.id;
         const checked = target.checked;
         if (e.shiftKey && lastCheckedId) {
-          const rows = Array.from(dom.shotBody.querySelectorAll('tr[data-id]'));
+          const rows = Array.from(dom.shotBody.querySelectorAll('tr[data-id], .grid-card[data-id]'));
           const startIdx = rows.findIndex(r => r.dataset.id === lastCheckedId);
           const endIdx = rows.findIndex(r => r.dataset.id === id);
           if (startIdx !== -1 && endIdx !== -1) {
@@ -290,14 +293,14 @@ import { render, save, getFilteredShots, updateStats, updateLocationFilter, esc,
         } else {
           if (checked) state.selectedIds.add(id);
           else state.selectedIds.delete(id);
-          target.closest('tr').classList.toggle('selected', checked);
+          target.closest('tr, .grid-card').classList.toggle('selected', checked);
         }
         lastCheckedId = id;
         updateSelectionUI();
       }
 
       if (target.matches('select[data-field]')) {
-        const row = target.closest('tr');
+        const row = target.closest('tr, .grid-card');
         const shot = state.shots.find(s => s.id === row.dataset.id);
         if (!shot) return;
         const field = target.dataset.field;
@@ -328,7 +331,7 @@ import { render, save, getFilteredShots, updateStats, updateLocationFilter, esc,
       }
     });
 
-    dom.shotBody.addEventListener('focusin', e => {
+    bind('focusin', e => {
       const target = e.target;
       if (target.matches('[contenteditable="true"]')) {
         const field = target.dataset.field;
@@ -345,21 +348,21 @@ import { render, save, getFilteredShots, updateStats, updateLocationFilter, esc,
       }
     });
 
-    dom.shotBody.addEventListener('input', e => {
+    bind('input', e => {
       const target = e.target;
       if (target.matches('[contenteditable="true"]')) {
         if (isAutocompleteActiveFor(target)) filterAutocomplete();
       }
     });
 
-    dom.shotBody.addEventListener('focusout', e => {
+    bind('focusout', e => {
       const target = e.target;
       if (target.matches('[contenteditable="true"]')) {
         const field = target.dataset.field;
         if (field === 'characters' || field === 'location' || field === 'props') {
           scheduleAutocompleteHide();
         }
-        const row = target.closest('tr');
+        const row = target.closest('tr, .grid-card');
         if (row) {
           const id = row.dataset.id;
           const shot = state.shots.find(s => s.id === id);
@@ -390,7 +393,7 @@ import { render, save, getFilteredShots, updateStats, updateLocationFilter, esc,
       }
 
       if (target.matches('.duration-input')) {
-        const row = target.closest('tr');
+        const row = target.closest('tr, .grid-card');
         const shot = state.shots.find(s => s.id === row.dataset.id);
         if (shot) {
           const normalized = normalizeDuration(target.value.trim());
@@ -401,13 +404,13 @@ import { render, save, getFilteredShots, updateStats, updateLocationFilter, esc,
       }
 
       if (target.matches('.block-label')) {
-        const row = target.closest('tr');
+        const row = target.closest('tr, .grid-card');
         const shot = state.shots.find(s => s.id === row.dataset.id);
         if (shot) { applyBulkEdit(shot.id, 'label', target.textContent.trim()); save(); }
       }
 
       if (target.matches('.time-input[data-field="callTime"]')) {
-        const row = target.closest('tr');
+        const row = target.closest('tr, .grid-card');
         const shot = state.shots.find(s => s.id === row.dataset.id);
         if (shot) {
           const raw = target.value.trim();
@@ -428,7 +431,7 @@ import { render, save, getFilteredShots, updateStats, updateLocationFilter, esc,
       }
     });
 
-    dom.shotBody.addEventListener('keydown', e => {
+    bind('keydown', e => {
       const target = e.target;
       if (target.matches('[contenteditable="true"]')) {
         if (handleAutocompleteKey(e, target)) return;
@@ -439,12 +442,54 @@ import { render, save, getFilteredShots, updateStats, updateLocationFilter, esc,
       }
     });
 
-    dom.shotBody.addEventListener('click', e => {
+    bind('click', e => {
       const target = e.target;
+      
+      const row = target.closest('tr[data-id], .grid-card[data-id]');
+      if (row && (e.metaKey || e.ctrlKey || e.shiftKey) && !target.closest('.row-checkbox') && !target.closest('.actions-btn') && !target.closest('.storyboard-cell')) {
+        e.preventDefault();
+        const id = row.dataset.id;
+        const checkbox = row.querySelector('.row-checkbox');
+        
+        if (e.shiftKey && lastCheckedId) {
+          const rows = Array.from(dom.shotBody.querySelectorAll('tr[data-id], .grid-card[data-id]'));
+          const startIdx = rows.findIndex(r => r.dataset.id === lastCheckedId);
+          const endIdx = rows.findIndex(r => r.dataset.id === id);
+          if (startIdx !== -1 && endIdx !== -1) {
+            const min = Math.min(startIdx, endIdx);
+            const max = Math.max(startIdx, endIdx);
+            
+            const lastRow = rows.find(r => r.dataset.id === lastCheckedId);
+            const checked = lastRow ? lastRow.querySelector('.row-checkbox').checked : true;
+            
+            for (let i = min; i <= max; i++) {
+              const rowId = rows[i].dataset.id;
+              if (checked) state.selectedIds.add(rowId);
+              else state.selectedIds.delete(rowId);
+              rows[i].querySelector('.row-checkbox').checked = checked;
+              rows[i].classList.toggle('selected', checked);
+            }
+          }
+        } else if (e.metaKey || e.ctrlKey) {
+          const isSelected = state.selectedIds.has(id);
+          if (isSelected) {
+            state.selectedIds.delete(id);
+            checkbox.checked = false;
+            row.classList.remove('selected');
+          } else {
+            state.selectedIds.add(id);
+            checkbox.checked = true;
+            row.classList.add('selected');
+          }
+          lastCheckedId = id;
+        }
+        updateSelectionUI();
+        return;
+      }
       
       const priorityLabel = target.closest('.priority-label');
       if (priorityLabel) {
-        const id = priorityLabel.closest('tr').dataset.id;
+        const id = priorityLabel.closest('tr, .grid-card').dataset.id;
         const shot = state.shots.find(s => s.id === id);
         if (shot) {
           const i = PRIORITY_CYCLE.indexOf(shot.priority);
@@ -472,19 +517,19 @@ import { render, save, getFilteredShots, updateStats, updateLocationFilter, esc,
       const actionsBtn = target.closest('.actions-btn');
       if (actionsBtn) {
         e.stopPropagation();
-        const row = actionsBtn.closest('tr');
+        const row = actionsBtn.closest('tr, .grid-card');
         state.contextRowId = row.dataset.id;
         showContextMenu(e.clientX, e.clientY);
         return;
       }
     });
 
-    dom.shotBody.addEventListener('mousedown', e => {
+    bind('mousedown', e => {
       const handle = e.target.closest('.drag-handle');
       if (handle) initDrag(e, handle);
     });
 
-    dom.shotBody.addEventListener('touchstart', e => {
+    bind('touchstart', e => {
       const handle = e.target.closest('.drag-handle');
       if (handle) initTouchDrag(e, handle);
     }, { passive: false });
@@ -615,3 +660,166 @@ import { render, save, getFilteredShots, updateStats, updateLocationFilter, esc,
     state.shots = state.shots.filter(s => s.id !== state.contextRowId);
     save(); render();
   });
+
+  // ── Render: Grid ───────────────────────────────
+  export function renderGrid() {
+    const filtered = getFilteredShots().filter(s => s.kind !== 'block');
+    let html = '';
+    let cumulative = 0;
+
+    if (state.currentGroupMode !== 'none') {
+      const groups = {};
+      const order = [];
+      filtered.forEach(s => {
+        let key = '';
+        if (state.currentGroupMode === 'location') {
+          key = s.location || '(No Location)';
+        } else if (state.currentGroupMode === 'movement') {
+          key = s.kind === 'block' ? 'Blocks' : (s.movement || '(No Movement)');
+        } else if (state.currentGroupMode === 'scene') {
+          const group = getSceneGroup(s.num);
+          key = group ? `Scene ${group.numStr}` : '(No Scene)';
+        }
+        if (!groups[key]) { groups[key] = []; order.push(key); }
+        groups[key].push(s);
+      });
+
+      order.forEach(key => {
+        let icon = '';
+        if (state.currentGroupMode === 'location') icon = '📍 ';
+        else if (state.currentGroupMode === 'movement') icon = '&#x1F3A5; ';
+        else if (state.currentGroupMode === 'scene') icon = '🎬 ';
+
+        html += `<div class="grid-group-header">${icon}${esc(key)}</div>`;
+        groups[key].forEach(s => {
+          const dur = parseDuration(s.duration);
+          if (dur > 0) cumulative += dur;
+          html += s.kind === 'block' ? buildGridBlockCard(s, cumulative) : buildGridCard(s, cumulative);
+        });
+      });
+    } else {
+      filtered.forEach(s => {
+        const dur = parseDuration(s.duration);
+        if (dur > 0) cumulative += dur;
+        html += s.kind === 'block' ? buildGridBlockCard(s, cumulative) : buildGridCard(s, cumulative);
+      });
+    }
+
+    dom.gridWrap.innerHTML = html;
+  }
+
+  function buildGridCard(s, runTime) {
+    const prioMap = { 'off': '-', 'low': 'I', 'medium': 'II', 'high': 'III' };
+    const prioDisplay = prioMap[s.priority] || '-';
+    const durValid = isValidDuration(s.duration);
+    const sched = state.scheduleMap[s.id] || { callMin: -1, endMin: -1, overrunMin: 0, isInherited: false };
+    const callTimeVal = sched.isInherited ? formatTime(sched.callMin) : (s.callTime || '');
+    const callValid = isValidTime(s.callTime);
+    const inheritedClass = sched.isInherited ? ' inherited' : '';
+
+    const group = getSceneGroup(s.num);
+    const pillStyle = group ? `background:${group.border};` : 'background:var(--text-2);';
+    
+    let ratioVal = state.boardRatio === 'auto' ? '16/9' : state.boardRatio;
+    if (ratioVal.includes(':')) ratioVal = ratioVal.replace(':', '/');
+
+    let storyboardContent = '';
+    if (s.storyboard) {
+      storyboardContent = `<img src="${s.storyboard}" alt="Storyboard">`;
+    } else {
+      storyboardContent = `<div class="gc-board-placeholder" style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;">Upload Board</div>`;
+    }
+
+    const movOpts  = buildSelectOpts(MOVEMENT_TYPES, state.acSets.movement, s.movement || 'STATIC');
+    const sizeOpts = buildSelectOpts(SHOT_SIZES,     state.acSets.shotSize, s.shotSize || '');
+    const lensOpts = buildSelectOpts(LENS_OPTIONS,   state.acSets.lens,     s.lens || '');
+
+    const isSelected = state.selectedIds.has(s.id) ? ' selected' : '';
+
+      const v = state.gridVisibility || { header: true, location: true, schedule: true, description: true, castProps: true, tech: true };
+
+      let headerHTML = v.header ? `<div class="gc-header">
+        <div style="display:flex; gap:6px; align-items:center;">
+          <input type="checkbox" class="row-checkbox" data-id="${s.id}" ${state.selectedIds.has(s.id) ? 'checked' : ''}>
+          <div class="gc-scene-pill" style="${pillStyle} display:flex; align-items:center; gap:4px;">
+            <span style="font-size:0.75em; font-weight:bold; opacity:0.7; letter-spacing:0.5px;">SCENE</span>
+            <span contenteditable="true" data-field="num" style="min-width:1ch; display:inline-block; outline:none;">${esc(s.num)}</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:4px;">
+            <span style="font-size:0.75em; font-weight:bold; color:var(--text-2); letter-spacing:0.5px;">SHOT</span>
+            <span contenteditable="true" data-field="shot" style="outline:none; min-width:1ch; display:inline-block; color:var(--text-0);">${esc(s.shot || '')}</span>
+          </div>
+        </div>
+        <span class="priority-label" data-p="${s.priority}" title="Priority: ${s.priority}" style="margin-right:12px;">${prioDisplay}</span>
+      </div>` : `<div style="display:none;"><input type="checkbox" class="row-checkbox" data-id="${s.id}" ${state.selectedIds.has(s.id) ? 'checked' : ''}></div>`;
+
+      let locationHTML = v.location ? `<div contenteditable="true" data-field="location" style="outline:none; color:var(--text-1); font-size: 0.9em; min-width:2ch; display:inline-block;">${esc(s.location || 'Location...')}</div>` : '';
+      
+      let scheduleHTML = v.schedule ? `<div style="font-family: var(--font-mono); font-size: 0.9em; display:flex; align-items:center;">
+            <input class="time-input${callValid ? '' : ' invalid'}${inheritedClass}" type="text" value="${callTimeVal}" placeholder="HH:MM" data-field="callTime" data-inherited="${sched.isInherited}" style="width: 44px; background: transparent; border: none; color: var(--text-1); text-align: right; outline: none; font-family: inherit;">
+            <span style="color:var(--text-2); margin:0 2px;">→</span>
+            <input class="duration-input${durValid ? '' : ' invalid'}" type="text" value="${esc(s.duration)}" placeholder="HH:MM" data-field="duration" style="width: 44px; background: transparent; border: none; color: var(--text-1); outline: none; font-family: inherit;">
+          </div>` : '';
+
+      let topRowHTML = (v.location || v.schedule) ? `<div class="gc-row"><div style="flex:1;">${locationHTML}</div>${scheduleHTML}</div>` : '';
+
+      let descHTML = v.description ? `<div class="gc-desc" contenteditable="true" data-field="notes" style="outline:none; min-width:2ch; display:inline-block; min-height: 1.4em;">${esc(s.notes || 'Description...')}</div>` : '';
+
+      let castPropsHTML = v.castProps ? `<div class="gc-row" style="margin-top:2px;">
+          <span style="color:var(--text-1);">Cast: <span contenteditable="true" data-field="characters" style="outline:none; color:var(--text-0);">${esc(s.characters || '')}</span></span>
+          <span style="color:var(--text-1); font-size: 0.9em;">Props: <span contenteditable="true" data-field="props" style="outline:none; color:var(--text-0);">${esc(s.props || '')}</span></span>
+        </div>` : '';
+
+      let techHTML = v.tech ? `<div class="gc-pills">
+          <select class="gc-pill" data-field="shotSize" style="appearance:none; padding-right:4px;">${sizeOpts}</select>
+          <select class="gc-pill" data-field="lens" style="appearance:none; padding-right:4px;">${lensOpts}</select>
+          <select class="gc-pill" data-field="movement" style="appearance:none; padding-right:4px;">${movOpts}</select>
+        </div>` : '';
+
+      let infoHTML = (topRowHTML || descHTML || castPropsHTML || techHTML) ? `<div class="gc-info">${topRowHTML}${descHTML}${castPropsHTML}${techHTML}</div>` : '';
+
+    return `<div class="grid-card${isSelected}" data-id="${s.id}">
+      <div class="col-actions" style="position: absolute; top: 0; right: 0; z-index: 10;"><button class="actions-btn" title="Actions" style="background: transparent; border: none; font-size: 18px; color: var(--text-0); cursor: pointer; padding: 4px;">&#x22EF;</button></div>
+      ${headerHTML}
+      <div class="gc-board-wrap storyboard-cell" data-id="${s.id}" style="cursor: pointer; aspect-ratio: ${ratioVal};">
+        ${storyboardContent}
+      </div>
+      ${infoHTML}
+    </div>`;
+  }
+
+  function buildGridBlockCard(s, runTime) {
+    const durValid = isValidDuration(s.duration);
+    const sched = state.scheduleMap[s.id] || { callMin: -1, endMin: -1, overrunMin: 0, isInherited: false };
+    const callTimeVal = sched.isInherited ? formatTime(sched.callMin) : (s.callTime || '');
+    const callValid = isValidTime(s.callTime);
+    const inheritedClass = sched.isInherited ? ' inherited' : '';
+
+    const group = getSceneGroup(s.num);
+    const pillStyle = group ? `background:${group.bg}; border-left: 4px solid ${group.border};` : 'background:var(--bg-2); border-left: 4px solid var(--text-2);';
+
+    const isSelected = state.selectedIds.has(s.id) ? ' selected' : '';
+
+    return `<div class="grid-card block-row block-type-${s.blockType} ${isSelected}" data-id="${s.id}" style="${pillStyle} grid-column: 1 / -1; flex-direction: row; align-items: center; padding: 12px; gap: 12px;">
+      <input type="checkbox" class="row-checkbox" data-id="${s.id}" ${state.selectedIds.has(s.id) ? 'checked' : ''}>
+      
+      <div class="gc-scene-pill" style="background: transparent; color: var(--text-0); display:flex; align-items:center; gap:4px;">
+        <span style="font-size:0.75em; font-weight:bold; opacity:0.5; letter-spacing:0.5px;">SCENE</span>
+        <span contenteditable="true" data-field="num" style="min-width:1ch; display:inline-block; outline:none;">${esc(s.num)}</span>
+      </div>
+
+      <select data-field="blockType" class="gc-pill" style="appearance:none;">
+        ${['PREP','BREAK','LUNCH','TRAVEL','CUSTOM'].map(t => `<option value="${t}"${s.blockType === t ? ' selected' : ''}>${t}</option>`).join('')}
+      </select>
+      <span contenteditable="true" data-field="label" class="block-label" data-placeholder="Label..." style="${s.blockType === 'CUSTOM' ? 'display:inline-block;' : 'display:none;'} color:var(--text-0); font-weight:bold; font-family:var(--font-sans);">${esc(s.label || '')}</span>
+      
+      <div style="flex: 1;"></div>
+
+      <div style="font-family: var(--font-mono); font-size: 0.9em; display:flex; align-items:center;">
+        <input class="time-input${callValid ? '' : ' invalid'}${inheritedClass}" type="text" value="${callTimeVal}" placeholder="HH:MM" data-field="callTime" data-inherited="${sched.isInherited}" style="width: 48px; background: transparent; border: none; color: var(--text-1); text-align: right; outline: none; font-family: inherit;">
+        <span style="color:var(--text-2); margin:0 8px;">→</span>
+        <input class="duration-input${durValid ? '' : ' invalid'}" type="text" value="${esc(s.duration)}" placeholder="HH:MM" data-field="duration" style="width: 48px; background: transparent; border: none; color: var(--text-1); outline: none; font-family: inherit;">
+      </div>
+      <div class="col-actions"><button class="actions-btn" title="Actions" style="background: transparent; border: none; font-size: 18px; color: var(--text-0); cursor: pointer; padding: 4px;">&#x22EF;</button></div>
+    </div>`;
+  }
