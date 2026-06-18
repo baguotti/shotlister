@@ -947,54 +947,54 @@ input[type="file"].sr-only {
 
 /* ── A4 Print / PDF ─────────────────────────────── */
 @media print {
-  :root {
-    --bg-0: #f4f4f6;
-    --bg-1: #ffffff;
-    --bg-2: #eaeaee;
-    --bg-3: #d8d8de;
-    --border: #ccccdd;
-    --text-0: #1a1a22;
-    --text-1: #555560;
-    --text-2: #888898;
-    --accent: #4466dd;
-    --accent-dim: #b0bce8;
-    --green: #28a060;
-    --yellow: #b89020;
-    --orange: #c06020;
-    --red: #c03030;
-    --blue: #3080c0;
-    --priority-low: #4466dd;
-    --priority-high: #c03030;
-    --card-bg: #fff;
-    --scrollbar-thumb: #c0c0cc;
-    --scrollbar-track: #f0f0f4;
-    --overrun-bg: rgba(192, 48, 48, 0.12);
+  :root, :root[data-theme="dark"], :root[data-theme="light"] {
+    --bg-0: #f4f4f6 !important;
+    --bg-1: #ffffff !important;
+    --bg-2: #eaeaee !important;
+    --bg-3: #d8d8de !important;
+    --border: #ccccdd !important;
+    --text-0: #1a1a22 !important;
+    --text-1: #555560 !important;
+    --text-2: #888898 !important;
+    --accent: #4466dd !important;
+    --accent-dim: #b0bce8 !important;
+    --green: #28a060 !important;
+    --yellow: #b89020 !important;
+    --orange: #c06020 !important;
+    --red: #c03030 !important;
+    --blue: #3080c0 !important;
+    --priority-low: #4466dd !important;
+    --priority-high: #c03030 !important;
+    --card-bg: #fff !important;
+    --scrollbar-thumb: #c0c0cc !important;
+    --scrollbar-track: #f0f0f4 !important;
+    --overrun-bg: rgba(192, 48, 48, 0.12) !important;
 
-    --scene-color-0: #8b7ad8;
-    --scene-color-1: #d87a7a;
-    --scene-color-2: #d89b7a;
-    --scene-color-3: #c2ba4a;
-    --scene-color-4: #52a664;
-    --scene-color-5: #5289a6;
-    --scene-color-6: #4ba89a;
-    --scene-color-7: #888888;
-    --scene-color-8: #c367b6;
-    --scene-color-9: #c3a952;
-    --scene-color-10: #937ad8;
-    --scene-color-11: #52a688;
+    --scene-color-0: #8b7ad8 !important;
+    --scene-color-1: #d87a7a !important;
+    --scene-color-2: #d89b7a !important;
+    --scene-color-3: #c2ba4a !important;
+    --scene-color-4: #52a664 !important;
+    --scene-color-5: #5289a6 !important;
+    --scene-color-6: #4ba89a !important;
+    --scene-color-7: #888888 !important;
+    --scene-color-8: #c367b6 !important;
+    --scene-color-9: #c3a952 !important;
+    --scene-color-10: #937ad8 !important;
+    --scene-color-11: #52a688 !important;
 
-    --scene-bg-0: rgba(139, 122, 216, 0.12);
-    --scene-bg-1: rgba(216, 122, 122, 0.12);
-    --scene-bg-2: rgba(216, 155, 122, 0.12);
-    --scene-bg-3: rgba(194, 186, 74, 0.12);
-    --scene-bg-4: rgba(82, 166, 100, 0.12);
-    --scene-bg-5: rgba(82, 137, 166, 0.12);
-    --scene-bg-6: rgba(75, 168, 154, 0.12);
-    --scene-bg-7: rgba(136, 136, 136, 0.12);
-    --scene-bg-8: rgba(195, 103, 182, 0.12);
-    --scene-bg-9: rgba(195, 169, 82, 0.12);
-    --scene-bg-10: rgba(147, 122, 216, 0.12);
-    --scene-bg-11: rgba(82, 166, 136, 0.12);
+    --scene-bg-0: rgba(139, 122, 216, 0.12) !important;
+    --scene-bg-1: rgba(216, 122, 122, 0.12) !important;
+    --scene-bg-2: rgba(216, 155, 122, 0.12) !important;
+    --scene-bg-3: rgba(194, 186, 74, 0.12) !important;
+    --scene-bg-4: rgba(82, 166, 100, 0.12) !important;
+    --scene-bg-5: rgba(82, 137, 166, 0.12) !important;
+    --scene-bg-6: rgba(75, 168, 154, 0.12) !important;
+    --scene-bg-7: rgba(136, 136, 136, 0.12) !important;
+    --scene-bg-8: rgba(195, 103, 182, 0.12) !important;
+    --scene-bg-9: rgba(195, 169, 82, 0.12) !important;
+    --scene-bg-10: rgba(147, 122, 216, 0.12) !important;
+    --scene-bg-11: rgba(82, 166, 136, 0.12) !important;
 
     color-scheme: light;
   }

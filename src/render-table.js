@@ -242,7 +242,7 @@ import { getGroupInfo } from './grouping.js';
       </div></td>
       <td class="end-time">${endTimeStr}</td>
       <td class="running-time hide-tablet">${formatDuration(runTime)}</td>
-      <td class="col-actions"><button class="actions-btn" title="Actions">&#x22EF;</button></td>
+      <td class="col-actions"><button class="actions-btn" title="Actions" aria-label="Shot Actions">&#x22EF;</button></td>
     </tr>`;
   }
 
@@ -299,7 +299,7 @@ import { getGroupInfo } from './grouping.js';
       </div></td>
       <td class="end-time">${endTimeStr}</td>
       <td class="running-time hide-tablet">${formatDuration(runTime)}</td>
-      <td class="col-actions"><button class="actions-btn" title="Actions">&#x22EF;</button></td>
+      <td class="col-actions"><button class="actions-btn" title="Actions" aria-label="Shot Actions">&#x22EF;</button></td>
     </tr>`;
   }
 
@@ -844,7 +844,7 @@ import { getGroupInfo } from './grouping.js';
       let infoHTML = (topRowHTML || descHTML || castPropsHTML || techHTML) ? `<div class="gc-info">${topRowHTML}${descHTML}${castPropsHTML}${techHTML}</div>` : '';
 
     return `<div class="grid-card${isSelected}" data-id="${s.id}">
-      <div class="col-actions" style="position: absolute; top: 0; right: 0; z-index: 10;"><button class="actions-btn" title="Actions" style="background: transparent; border: none; font-size: 18px; color: var(--text-0); cursor: pointer; padding: 4px;">&#x22EF;</button></div>
+      <div class="col-actions" style="position: absolute; top: 0; right: 0; z-index: 10;"><button class="actions-btn" title="Actions" aria-label="Shot Actions" style="background: transparent; border: none; font-size: 18px; color: var(--text-0); cursor: pointer; padding: 4px;">&#x22EF;</button></div>
       ${headerHTML}
       <div class="gc-board-wrap storyboard-cell" data-id="${s.id}" style="cursor: pointer; aspect-ratio: ${ratioVal};">
         ${storyboardContent}
@@ -885,6 +885,6 @@ import { getGroupInfo } from './grouping.js';
         <span style="color:var(--text-2); margin:0 8px;">→</span>
         <input class="duration-input${durValid ? '' : ' invalid'}" type="text" value="${esc(s.duration)}" placeholder="HH:MM" data-field="duration" style="width: 48px; background: transparent; border: none; color: var(--text-1); outline: none; font-family: inherit;">
       </div>
-      <div class="col-actions"><button class="actions-btn" title="Actions" style="background: transparent; border: none; font-size: 18px; color: var(--text-0); cursor: pointer; padding: 4px;">&#x22EF;</button></div>
+      <div class="col-actions"><button class="actions-btn" title="Actions" aria-label="Shot Actions" style="background: transparent; border: none; font-size: 18px; color: var(--text-0); cursor: pointer; padding: 4px;">&#x22EF;</button></div>
     </div>`;
   }
