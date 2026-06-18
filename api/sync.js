@@ -13,9 +13,15 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+
   // Ensure database credentials are set
-  if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
-    return res.status(500).json({ error: 'Database environment variables not configured on Vercel' });
+  if (!url || !token) {
+    return res.status(500).json({ 
+      error: 'Database environment variables not configured on Vercel',
+      availableKeys: Object.keys(process.env).filter(k => k.includes('REDIS') || k.includes('KV') || k.includes('UPSTASH'))
+    });
   }
 
   const { passcode, action, payload } = req.body || {};
@@ -25,7 +31,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const redis = Redis.fromEnv();
+    const redis = new Redis({ url, token });
     const listKey = `sl:user:${passcode}:projects`;
 
     if (action === 'get_list') {
