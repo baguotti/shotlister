@@ -297,7 +297,7 @@ html, body {
   min-width: 2px;
   position: relative;
   transition: opacity .15s;
-  cursor: default;
+  cursor: pointer;
   border-right: 1px solid var(--bg-0);
 }
 .tl-block:last-child { border-right: none; }
@@ -322,6 +322,7 @@ html, body {
   box-shadow: 0 2px 8px rgba(0,0,0,.3);
 }
 .tl-block:hover .tl-tooltip { display: block; }
+
 
 .timeline-label {
   font-family: var(--font-mono);

@@ -286,6 +286,36 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
     seedDefaults();
   });
 
+  $('btnImportHome')?.addEventListener('click', () => {
+    $('importHomeInput').click();
+  });
+
+  $('importHomeInput')?.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async ev => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        const pid = uid();
+        const title = data.title || 'Imported Project';
+        const count = data.shots ? data.shots.length : 0;
+        
+        state.projectsList.unshift({ id: pid, title, updatedAt: Date.now(), count });
+        saveProjects();
+        
+        const rawShots = data.shots || [];
+        await putProject(pid, rawShots);
+        
+        renderHome();
+      } catch (err) {
+        alert('Failed to parse JSON file.');
+      }
+      $('importHomeInput').value = '';
+    };
+    reader.readAsText(file);
+  });
+
   $('projectGrid').addEventListener('click', async e => {
     const dupBtn = e.target.closest('.pc-dup');
     if (dupBtn) {
@@ -657,13 +687,13 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
       createShot({ num: '2a', characters: 'F', location: 'Changing Room', description: 'Wide of F. conversation with Lisa', props: 'not sweaty', duration: '0:05' }),
       createShot({ num: '2a', characters: 'F', location: 'Changing Room', description: 'Close of F. conversation with Lisa - line drops, he gets up looks for signal', props: 'not sweaty, vapes', duration: '0:10' }),
       createShot({ num: '2a', characters: '', location: 'Changing Room', description: 'Insert shot of phone - dialing Emma', props: '', duration: '0:05' }),
-      createShot({ num: '2a', characters: 'F', location: 'Changing Room', description: 'Fitz paces around the room vaping as he's waiting for Emma to pick up - he is uncomfortable', props: 'not sweaty, vapes', duration: '0:05' }),
+      createShot({ num: '2a', characters: 'F', location: 'Changing Room', description: "Fitz paces around the room vaping as he's waiting for Emma to pick up - he is uncomfortable", props: 'not sweaty, vapes', duration: '0:05' }),
       createShot({ num: '2a', characters: 'F', location: 'Changing Room', description: 'F. calls Emma and conversation follows - line drops - KNOCK', props: 'not sweaty, vapes', duration: '0:10' }),
       createShot({ num: '2b', characters: 'F + Ana', location: 'Changing Room - at the door', description: '', props: '', duration: '' }),
       createShot({ num: '2b', characters: 'F + Ana', location: 'Changing Room - at the door', description: 'Fitz approaches the door - conversation with Ana, then shuts the door', props: '', duration: '0:15' }),
       createShot({ num: '2c', characters: 'F', location: 'Changing Room - by the small window', description: 'Insert shots - Lisa is calling again - CU of phone - F. silences it - then calls Emma again', props: '', duration: '0:10' }),
       createShot({ num: '2c', characters: '', location: 'Changing Room - by the small window', description: 'Fitz paces in the room and then leaves the room to find some signal, jump cuts', props: '', duration: '0:05' }),
-      createShot({ num: '2c', characters: 'F', location: 'Changing Room - by the small window', description: 'Phone rings, it's Lisa, F. silences it - then calls Emma again.', props: '', duration: '0:05' }),
+      createShot({ num: '2c', characters: 'F', location: 'Changing Room - by the small window', description: "Phone rings, it's Lisa, F. silences it - then calls Emma again.", props: '', duration: '0:05' }),
       createShot({ num: '2d', characters: '', location: '', description: 'Fitz moves towards the back of the room - Lisa is calling again', props: '', duration: '0:05' }),
       createShot({ num: '2d', characters: '', location: 'Changing Room - back of Studio 7', description: 'Insert shot - phone', props: '', duration: '0:05' }),
       createShot({ num: '2d', characters: 'F', location: 'Changing Room - back of Studio 7', description: 'Call with Lisa again - knocks on the door - Fitz drops the call', props: '', duration: '0:10' }),

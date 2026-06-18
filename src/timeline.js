@@ -3,6 +3,8 @@ import { state, getSceneGroup } from './state.js';
 import { esc } from './main.js';
 import { parseDuration, formatDuration, formatTime } from './schedule.js';
   // ── Timeline Bar ───────────────────────────────
+  let tlInitialized = false;
+
   export function renderTimeline() {
     const inner = $('timelineInner');
     const times = $('timelineTimes');
@@ -11,6 +13,32 @@ import { parseDuration, formatDuration, formatTime } from './schedule.js';
       inner.innerHTML = '';
       times.textContent = '';
       return;
+    }
+
+    if (!tlInitialized && inner) {
+      tlInitialized = true;
+      inner.addEventListener('click', e => {
+        const block = e.target.closest('.tl-block');
+        if (block && block.dataset.id) {
+          const id = block.dataset.id;
+          let targetEl = null;
+          if (state.viewMode === 'list') {
+            targetEl = document.querySelector(`tr[data-id="${id}"]`);
+          } else {
+            targetEl = document.querySelector(`.grid-card[data-id="${id}"]`);
+          }
+          if (targetEl) {
+            targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            targetEl.style.transition = 'background 0.3s';
+            const oldBg = targetEl.style.background;
+            targetEl.style.background = 'var(--bg-3)'; // slight highlight
+            setTimeout(() => {
+              targetEl.style.background = oldBg;
+              setTimeout(() => { targetEl.style.transition = ''; }, 300);
+            }, 300);
+          }
+        }
+      });
     }
 
     const totalDurSec = state.shots.reduce((sum, s) => {
@@ -29,7 +57,7 @@ import { parseDuration, formatDuration, formatTime } from './schedule.js';
         }
         const defaultBg = s.kind === 'block' ? 'var(--bg-2)' : '';
         const bg = group ? group.border : defaultBg;
-        return `<div class="tl-block${s.kind==='block' ? ' block-type-'+s.blockType : ''}" style="width:${pct}%;${bg?'background:'+bg+' !important':''}">` +
+        return `<div class="tl-block${s.kind==='block' ? ' block-type-'+s.blockType : ''}" data-id="${s.id}" style="width:${pct}%;${bg?'background:'+bg+' !important':''}">` +
         `<span class="tl-tooltip">${title}</span></div>`;
       }).join('');
     } else {
@@ -47,7 +75,7 @@ import { parseDuration, formatDuration, formatTime } from './schedule.js';
         }
         const defaultBg = s.kind === 'block' ? (s.blockType==='PREP'?'var(--orange)':s.blockType==='BREAK'?'var(--green)':s.blockType==='LUNCH'?'var(--blue)':s.blockType==='TRAVEL'?'#a855f7':'var(--text-2)') : '';
         const bg = group ? group.border : defaultBg;
-        return `<div class="tl-block" style="width:${Math.max(pct, 0.5)}%;${bg?'background:'+bg+' !important':''}">` +
+        return `<div class="tl-block" data-id="${s.id}" style="width:${Math.max(pct, 0.5)}%;${bg?'background:'+bg+' !important':''}">` +
           `<span class="tl-tooltip">${title}</span></div>`;
       }).join('');
     }

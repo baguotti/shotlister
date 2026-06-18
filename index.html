@@ -29,7 +29,9 @@
       <h1 style="font-family:var(--font-mono); font-size:24px; color:var(--text-1); margin:0;">Shotlister Projects</h1>
       <div style="display:flex; gap:12px; align-items:center;">
         <button class="btn" id="btnSyncSettingsHome" aria-label="Cloud Sync Settings" style="display:flex; align-items:center; gap:6px;">☁️ <span id="syncStatusTextHome">Offline Mode</span></button>
+        <button class="btn" id="btnImportHome" style="background:var(--bg-2); color:var(--text-1); border-color:var(--border);">↓ Import Project</button>
         <button class="btn" id="btnNewProject" style="background:var(--accent); color:var(--bg-0); border-color:var(--accent); font-weight:bold;">+ New Project</button>
+        <input type="file" id="importHomeInput" accept=".json" style="display:none;">
       </div>
     </div>
     <div id="projectGrid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:20px;"></div>
