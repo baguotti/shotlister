@@ -791,10 +791,10 @@ input[type="file"].sr-only {
   font-size: 11px;
   color: var(--text-2);
 }
+.project-card .pc-dup,
 .project-card .pc-del {
   position: absolute;
   top: 12px;
-  right: 12px;
   background: transparent;
   border: none;
   color: var(--text-2);
@@ -804,8 +804,12 @@ input[type="file"].sr-only {
   opacity: 0;
   transition: opacity .15s, background .15s, color .15s;
 }
+.project-card .pc-del { right: 12px; }
+.project-card .pc-dup { right: 40px; }
+.project-card:hover .pc-dup,
 .project-card:hover .pc-del { opacity: 1; }
 .project-card .pc-del:hover { background: var(--bg-3); color: var(--red); }
+.project-card .pc-dup:hover { background: var(--bg-3); color: var(--text-0); }
 
 /* ── Autocomplete Dropdown ──────────────────────── */
 .ac-dropdown {

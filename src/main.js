@@ -385,7 +385,41 @@ import { getProject, putProject, deleteProject } from './db.js';
     seedDefaults();
   });
 
-  $('projectGrid').addEventListener('click', e => {
+  $('projectGrid').addEventListener('click', async e => {
+    const dupBtn = e.target.closest('.pc-dup');
+    if (dupBtn) {
+      e.stopPropagation();
+      const idToDup = dupBtn.dataset.dup;
+      const pToDup = state.projectsList.find(p => p.id === idToDup);
+      if (pToDup) {
+        try {
+          const newPid = uid();
+          let oldShots = [];
+          if (idToDup === state.currentProjectId) {
+            oldShots = [...state.shots];
+          } else {
+            const fromDb = await getProject(idToDup);
+            if (Array.isArray(fromDb)) {
+              oldShots = fromDb;
+            } else {
+              const raw = localStorage.getItem('sl-project-' + idToDup);
+              if (raw) oldShots = JSON.parse(raw);
+            }
+          }
+          const clonedShots = oldShots.map(s => ({...s, id: uid()}));
+          
+          state.projectsList.unshift({ id: newPid, title: pToDup.title + ' (Copy)', updatedAt: Date.now(), count: clonedShots.length });
+          saveProjects();
+          
+          await putProject(newPid, clonedShots);
+          renderHome();
+        } catch(err) {
+          console.error('Duplicate failed:', err);
+        }
+      }
+      return;
+    }
+
     const delBtn = e.target.closest('.pc-del');
     if (delBtn) {
       e.stopPropagation();
@@ -659,6 +693,7 @@ import { getProject, putProject, deleteProject } from './db.js';
       <div class="project-card" data-id="${p.id}">
         <div class="pc-title">${esc(p.title || 'Untitled')}</div>
         <div class="pc-meta">${p.count} items · Last edited: ${new Date(p.updatedAt).toLocaleDateString()}</div>
+        <button class="pc-dup" data-dup="${p.id}" title="Duplicate Project">📄</button>
         <button class="pc-del" data-del="${p.id}" title="Delete Project">🗑</button>
       </div>
     `).join('');
