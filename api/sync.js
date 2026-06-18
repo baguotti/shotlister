@@ -13,8 +13,17 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+  // Dynamically resolve the environment variables to handle Vercel database prefixing/binding aliases
+  let url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
+  let token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+
+  if (!url || !token) {
+    const urlKey = Object.keys(process.env).find(k => k.endsWith('KV_REST_API_URL') || k.endsWith('UPSTASH_REDIS_REST_URL'));
+    const tokenKey = Object.keys(process.env).find(k => k.endsWith('KV_REST_API_TOKEN') || k.endsWith('UPSTASH_REDIS_REST_TOKEN'));
+    
+    if (urlKey) url = process.env[urlKey];
+    if (tokenKey) token = process.env[tokenKey];
+  }
 
   // Ensure database credentials are set
   if (!url || !token) {
