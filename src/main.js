@@ -7,6 +7,9 @@ import { renderTimeline } from './timeline.js';
 import { loadAutocomplete, extractAutocompleteFromShots } from './autocomplete.js';
 import { initPWA } from './pwa.js';
 import { getProject, putProject, deleteProject } from './db.js';
+import { initDrag, initTouchDrag, reorderShots } from './drag-drop.js';
+import { initBulkActions, updateSelectionUI } from './bulk-actions.js';
+import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
 
   // ── Title Auto-Resize ──────────────────────────
   // Binary-search the largest font-size that keeps text in one line.
@@ -81,36 +84,6 @@ import { getProject, putProject, deleteProject } from './db.js';
     });
   }
 
-  export function updateSelectionUI() {
-    const bar = $('bulkActionBar');
-    if (!bar) return;
-    const count = state.selectedIds.size;
-    if (count > 0) {
-      $('bulkCount').textContent = `${count} selected`;
-      bar.classList.add('visible');
-    } else {
-      bar.classList.remove('visible');
-    }
-    
-    // Sync Select All checkbox in header
-    const selectAll = $('selectAll');
-    if (selectAll) {
-      selectAll.checked = count > 0 && count === state.shots.length;
-      selectAll.indeterminate = count > 0 && count < state.shots.length;
-    }
-  }
-
-  export function applyBulkEdit(id, field, val) {
-    if (state.selectedIds.has(id)) {
-      state.selectedIds.forEach(selectedId => {
-        const s = state.shots.find(x => x.id === selectedId);
-        if (s) s[field] = val;
-      });
-    } else {
-      const shot = state.shots.find(s => s.id === id);
-      if (shot) shot[field] = val;
-    }
-  }
 
   // ── Preset Control ─────────────────────────────
   export function applyPreset(key) {
@@ -209,83 +182,6 @@ import { getProject, putProject, deleteProject } from './db.js';
     return d.innerHTML;
   }
 
-  // ── Drag & Drop (mouse) ────────────────────────
-  export function initDrag(e, handle) {
-    const row = handle.closest('tr, .grid-card');
-    state.dragSrcId = row.dataset.id;
-    row.classList.add('dragging');
-
-    const onMove = e2 => {
-      const target = document.elementFromPoint(e2.clientX, e2.clientY);
-      const targetRow = target ? target.closest('tr[data-id], .grid-card[data-id]') : null;
-      document.querySelectorAll('.drag-over').forEach(r => r.classList.remove('drag-over'));
-      if (targetRow && targetRow.dataset.id !== state.dragSrcId) {
-        targetRow.classList.add('drag-over');
-      }
-    };
-
-    const onUp = e2 => {
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
-      row.classList.remove('dragging');
-      document.querySelectorAll('.drag-over').forEach(r => r.classList.remove('drag-over'));
-
-      const target = document.elementFromPoint(e2.clientX, e2.clientY);
-      const targetRow = target ? target.closest('tr[data-id], .grid-card[data-id]') : null;
-      if (targetRow && targetRow.dataset.id !== state.dragSrcId) {
-        reorderShots(state.dragSrcId, targetRow.dataset.id);
-      }
-      state.dragSrcId = null;
-    };
-
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
-  }
-
-  // ── Drag & Drop (touch) ────────────────────────
-  export function initTouchDrag(e, handle) {
-    e.preventDefault();
-    const row = handle.closest('tr, .grid-card');
-    state.dragSrcId = row.dataset.id;
-    row.classList.add('dragging');
-
-    const onMove = e2 => {
-      const touch = e2.touches[0];
-      const target = document.elementFromPoint(touch.clientX, touch.clientY);
-      const targetRow = target ? target.closest('tr[data-id], .grid-card[data-id]') : null;
-      document.querySelectorAll('.drag-over').forEach(r => r.classList.remove('drag-over'));
-      if (targetRow && targetRow.dataset.id !== state.dragSrcId) {
-        targetRow.classList.add('drag-over');
-      }
-    };
-
-    const onEnd = e2 => {
-      document.removeEventListener('touchmove', onMove);
-      document.removeEventListener('touchend', onEnd);
-      row.classList.remove('dragging');
-      document.querySelectorAll('.drag-over').forEach(r => r.classList.remove('drag-over'));
-
-      const touch = e2.changedTouches[0];
-      const target = document.elementFromPoint(touch.clientX, touch.clientY);
-      const targetRow = target ? target.closest('tr[data-id], .grid-card[data-id]') : null;
-      if (targetRow && targetRow.dataset.id !== state.dragSrcId) {
-        reorderShots(state.dragSrcId, targetRow.dataset.id);
-      }
-      state.dragSrcId = null;
-    };
-
-    document.addEventListener('touchmove', onMove, { passive: false });
-    document.addEventListener('touchend', onEnd);
-  }
-
-  function reorderShots(srcId, targetId) {
-    const srcIdx = state.shots.findIndex(s => s.id === srcId);
-    const tgtIdx = state.shots.findIndex(s => s.id === targetId);
-    if (srcIdx < 0 || tgtIdx < 0) return;
-    const [moved] = state.shots.splice(srcIdx, 1);
-    state.shots.splice(tgtIdx, 0, moved);
-    save(); render();
-  }
 
   // ── Stats ──────────────────────────────────────
   export function updateStats() {
@@ -479,44 +375,7 @@ import { getProject, putProject, deleteProject } from './db.js';
     });
   });
 
-  // ── Bulk Actions ───────────────────────────────
-  $('btnBulkClear')?.addEventListener('click', () => {
-    state.selectedIds.clear();
-    updateSelectionUI();
-    render();
-  });
-
-  $('btnBulkDelete')?.addEventListener('click', () => {
-    if (!confirm(`Delete ${state.selectedIds.size} selected items?`)) return;
-    state.shots = state.shots.filter(s => !state.selectedIds.has(s.id));
-    state.selectedIds.clear();
-    save();
-    render();
-  });
-
-  $('btnBulkDuplicate')?.addEventListener('click', () => {
-    const toDuplicate = state.shots.filter(s => state.selectedIds.has(s.id));
-    let lastIdx = -1;
-    toDuplicate.forEach(s => {
-      const idx = state.shots.findIndex(x => x.id === s.id);
-      if (idx > lastIdx) lastIdx = idx;
-    });
-    
-    const newShots = toDuplicate.map(s => {
-      return { ...s, id: uid() };
-    });
-
-    if (lastIdx !== -1) {
-      state.shots.splice(lastIdx + 1, 0, ...newShots);
-    } else {
-      state.shots.push(...newShots);
-    }
-    
-    state.selectedIds.clear();
-    newShots.forEach(s => state.selectedIds.add(s.id));
-    save();
-    render();
-  });
+  initBulkActions();
   $('btnViewMode').addEventListener('click', () => {
     state.viewMode = state.viewMode === 'list' ? 'grid' : 'list';
     $('btnViewMode').innerHTML = state.viewMode === 'list' ? '▦ Grid' : '▤ List';
@@ -823,128 +682,6 @@ import { getProject, putProject, deleteProject } from './db.js';
     applyPresetLayout();
   }
 
-  // ── Cloud Sync Helpers ─────────────────────────
-  async function hashPasscode(passcode) {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(passcode);
-    const hash = await crypto.subtle.digest('SHA-256', data);
-    return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
-  }
-
-  async function syncRequest(action, payload = null) {
-    if (!state.syncPasscode) return null;
-    try {
-      updateSyncStatus('syncing');
-      const response = await fetch('/api/sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          passcode: state.syncPasscode,
-          action,
-          payload
-        })
-      });
-      if (!response.ok) throw new Error(await response.text());
-      const data = await response.json();
-      updateSyncStatus('synced');
-      return data;
-    } catch(err) {
-      console.error('Sync request failed:', err);
-      updateSyncStatus('error');
-      return null;
-    }
-  }
-
-  function updateSyncStatus(status) {
-    state.syncStatus = status;
-    const text = status === 'offline' ? 'Offline Mode' 
-               : status === 'syncing' ? 'Syncing...' 
-               : status === 'synced' ? 'Synced' 
-               : 'Sync Error';
-    if (dom.syncStatusTextHome) dom.syncStatusTextHome.textContent = text;
-    if (dom.syncStatusTextEditor) dom.syncStatusTextEditor.textContent = text;
-  }
-
-  async function connectAndSync(passcode) {
-    try {
-      const hashed = await hashPasscode(passcode);
-      state.syncPasscode = hashed;
-      localStorage.setItem(LS_SYNC_CODE_KEY, hashed);
-      dom.syncDisconnect.style.display = 'inline-block';
-      
-      const remoteList = await syncRequest('get_list');
-      if (remoteList === null) {
-        alert('Failed to connect to sync server. Check configuration.');
-        return;
-      }
-      
-      const localList = state.projectsList;
-      const mergedMap = new Map();
-      
-      remoteList.forEach(p => mergedMap.set(p.id, p));
-      
-      const localOnlyOrNewer = [];
-      localList.forEach(p => {
-        const remote = mergedMap.get(p.id);
-        if (!remote || p.updatedAt > remote.updatedAt) {
-          mergedMap.set(p.id, p);
-          localOnlyOrNewer.push(p);
-        }
-      });
-      
-      state.projectsList = Array.from(mergedMap.values());
-      saveProjects();
-      
-      for (const p of localOnlyOrNewer) {
-        const shots = await getProject(p.id);
-        if (shots) {
-          await syncRequest('save_project', { projectId: p.id, shots });
-        }
-      }
-      
-      await syncRequest('save_list', state.projectsList);
-      renderHome();
-    } catch(err) {
-      console.error('connectAndSync error:', err);
-      updateSyncStatus('error');
-    }
-  }
-
-  // ── Sync UI Event Listeners ────────────────────
-  const openSyncModal = () => {
-    dom.syncPasscodeInput.value = '';
-    dom.syncModal.showModal();
-  };
-
-  dom.btnSyncSettingsHome.addEventListener('click', openSyncModal);
-  dom.btnSyncSettingsEditor.addEventListener('click', openSyncModal);
-
-  dom.syncCancel.addEventListener('click', () => {
-    dom.syncModal.close();
-  });
-
-  dom.syncSubmit.addEventListener('click', async () => {
-    const passcode = dom.syncPasscodeInput.value.trim();
-    if (!passcode) {
-      alert('Please enter a passcode.');
-      return;
-    }
-    dom.syncModal.close();
-    await connectAndSync(passcode);
-  });
-
-  dom.syncDisconnect.addEventListener('click', () => {
-    if (confirm('Disconnect from Cloud Sync? Your data will remain locally, but will no longer sync.')) {
-      state.syncPasscode = null;
-      state.syncStatus = 'offline';
-      localStorage.removeItem(LS_SYNC_CODE_KEY);
-      dom.syncDisconnect.style.display = 'none';
-      updateSyncStatus('offline');
-      dom.syncModal.close();
-      renderHome();
-    }
-  });
-
   // ── Init ───────────────────────────────────────
   loadLayout();
   loadGridVis();
@@ -959,43 +696,9 @@ import { getProject, putProject, deleteProject } from './db.js';
   initTableDelegation();
   migrateLegacyData();
   loadAutocomplete();
-  
-  // Initialize Cloud Sync if passcode is stored
-  async function initSyncAndLoad() {
-    const savedSyncCode = localStorage.getItem(LS_SYNC_CODE_KEY);
-    if (savedSyncCode) {
-      state.syncPasscode = savedSyncCode;
-      dom.syncDisconnect.style.display = 'inline-block';
-      updateSyncStatus('syncing');
-      
-      const remoteList = await syncRequest('get_list');
-      if (remoteList) {
-        const mergedMap = new Map();
-        remoteList.forEach(p => mergedMap.set(p.id, p));
-        state.projectsList.forEach(p => {
-          const remote = mergedMap.get(p.id);
-          if (!remote || p.updatedAt > remote.updatedAt) {
-            mergedMap.set(p.id, p);
-          }
-        });
-        state.projectsList = Array.from(mergedMap.values());
-        saveProjects();
-        updateSyncStatus('synced');
-      } else {
-        updateSyncStatus('error');
-      }
-    }
-    
-    const lastId = localStorage.getItem(LS_LAST_PROJ_KEY);
-    if (lastId && state.projectsList.find(p => p.id === lastId)) {
-      await loadProject(lastId);
-    } else {
-      renderHome();
-    }
-  }
 
+  initSyncListeners();
   initSyncAndLoad();
 
   // ResizeObserver: reflow preset sizes whenever the table container changes size
   new ResizeObserver(() => applyPresetLayout()).observe(dom.tableWrap);
-
