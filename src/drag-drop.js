@@ -1,9 +1,10 @@
-import { state } from './state.js';
+import { state, setDragSrcId, setShots } from './state.js';
 import { render, save } from './main.js';
+import { softRender } from './render-table.js';
 
 export function initDrag(e, handle) {
   const row = handle.closest('tr, .grid-card');
-  state.dragSrcId = row.dataset.id;
+  setDragSrcId(row.dataset.id);
   row.classList.add('dragging');
 
   const onMove = e2 => {
@@ -26,7 +27,7 @@ export function initDrag(e, handle) {
     if (targetRow && targetRow.dataset.id !== state.dragSrcId) {
       reorderShots(state.dragSrcId, targetRow.dataset.id);
     }
-    state.dragSrcId = null;
+    setDragSrcId(null);
   };
 
   document.addEventListener('mousemove', onMove);
@@ -36,7 +37,7 @@ export function initDrag(e, handle) {
 export function initTouchDrag(e, handle) {
   e.preventDefault();
   const row = handle.closest('tr, .grid-card');
-  state.dragSrcId = row.dataset.id;
+  setDragSrcId(row.dataset.id);
   row.classList.add('dragging');
 
   const onMove = e2 => {
@@ -61,7 +62,7 @@ export function initTouchDrag(e, handle) {
     if (targetRow && targetRow.dataset.id !== state.dragSrcId) {
       reorderShots(state.dragSrcId, targetRow.dataset.id);
     }
-    state.dragSrcId = null;
+    setDragSrcId(null);
   };
 
   document.addEventListener('touchmove', onMove, { passive: false });
@@ -72,7 +73,28 @@ export function reorderShots(srcId, targetId) {
   const srcIdx = state.shots.findIndex(s => s.id === srcId);
   const tgtIdx = state.shots.findIndex(s => s.id === targetId);
   if (srcIdx < 0 || tgtIdx < 0) return;
-  const [moved] = state.shots.splice(srcIdx, 1);
-  state.shots.splice(tgtIdx, 0, moved);
-  save(); render();
+  const updatedShots = [...state.shots];
+  const [moved] = updatedShots.splice(srcIdx, 1);
+  updatedShots.splice(tgtIdx, 0, moved);
+  setShots(updatedShots);
+  if (state.currentGroupMode !== 'none') {
+    save(); render();
+    return;
+  }
+  
+  const srcRow = document.querySelector(`tr[data-id="${srcId}"]`);
+  const tgtRow = document.querySelector(`tr[data-id="${targetId}"]`);
+  if (srcRow && tgtRow) {
+    if (srcIdx < tgtIdx) tgtRow.after(srcRow);
+    else tgtRow.before(srcRow);
+  }
+  
+  const srcCard = document.querySelector(`.grid-card[data-id="${srcId}"]`);
+  const tgtCard = document.querySelector(`.grid-card[data-id="${targetId}"]`);
+  if (srcCard && tgtCard) {
+    if (srcIdx < tgtIdx) tgtCard.after(srcCard);
+    else tgtCard.before(srcCard);
+  }
+  
+  save(); softRender();
 }

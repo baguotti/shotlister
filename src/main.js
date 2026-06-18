@@ -1,5 +1,5 @@
 import { dom, $ } from './dom.js';
-import { state, PRESETS, createShot, createBlock, LS_KEY, LS_TITLE_KEY, LS_PROJECTS_KEY, LS_LAST_PROJ_KEY, LS_THEME_KEY, LS_PRESET_KEY, LS_RATIO_KEY, LS_VIEW_MODE_KEY, LS_GRID_VIS_KEY, LS_SYNC_CODE_KEY, uid, GROUP_MODES, clearSelection } from './state.js';
+import { state, PRESETS, createShot, createBlock, LS_KEY, LS_TITLE_KEY, LS_PROJECTS_KEY, LS_LAST_PROJ_KEY, LS_THEME_KEY, LS_PRESET_KEY, LS_RATIO_KEY, LS_VIEW_MODE_KEY, LS_GRID_VIS_KEY, LS_SYNC_CODE_KEY, uid, GROUP_MODES, clearSelection, setProjectsList, setCurrentProjectId, setShots, setViewMode, setCurrentGroupMode, setContextRowId, setDragSrcId, setCurrentStoryboardId, setCurrentPreset, setBoardRatio, setGridVisibility } from './state.js';
 import { cascadeSchedule, formatDuration, formatOverrun, parseDuration, formatTime } from './schedule.js';
 import { renderTable, renderGrid, hideContextMenu, initTableDelegation } from './render-table.js';
 import { renderSettings } from './render-settings.js';
@@ -87,7 +87,7 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
 
   // ── Preset Control ─────────────────────────────
   export function applyPreset(key) {
-    state.currentPreset = key;
+    setCurrentPreset(key);
     document.querySelectorAll('#presetCtrl button').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.preset === key);
     });
@@ -111,7 +111,7 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
 
   if (dom.boardRatioSelect) {
     dom.boardRatioSelect.addEventListener('change', e => {
-      state.boardRatio = e.target.value;
+      setBoardRatio(e.target.value);
       localStorage.setItem(LS_RATIO_KEY, state.boardRatio);
       applyBoardRatio();
     });
@@ -129,14 +129,14 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
     try {
       const pr = localStorage.getItem(LS_PRESET_KEY);
       if (pr && PRESETS[pr]) {
-        state.currentPreset = pr;
+        setCurrentPreset(pr);
         document.querySelectorAll('#presetCtrl button').forEach(btn => {
           btn.classList.toggle('active', btn.dataset.preset === pr);
         });
       }
       const vm = localStorage.getItem(LS_VIEW_MODE_KEY);
       if (vm === 'list' || vm === 'grid') {
-        state.viewMode = vm;
+        setViewMode(vm);
         $('btnViewMode').innerHTML = state.viewMode === 'list' ? '▦ Grid' : '▤ List';
       }
     } catch(e) { /* ignore */ }
@@ -146,7 +146,7 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
     try {
       const vis = localStorage.getItem(LS_GRID_VIS_KEY);
       if (vis) {
-        state.gridVisibility = { ...state.gridVisibility, ...JSON.parse(vis) };
+        setGridVisibility({ ...state.gridVisibility, ...JSON.parse(vis) });
       }
       if (dom.toggleGridHeader) dom.toggleGridHeader.checked = state.gridVisibility.header;
       if (dom.toggleGridLocation) dom.toggleGridLocation.checked = state.gridVisibility.location;
@@ -158,14 +158,14 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
   }
 
   export function saveGridVis() {
-    state.gridVisibility = {
+    setGridVisibility({
       header: dom.toggleGridHeader.checked,
       location: dom.toggleGridLocation.checked,
       schedule: dom.toggleGridSchedule.checked,
       description: dom.toggleGridDescription.checked,
       castProps: dom.toggleGridCastProps.checked,
       tech: dom.toggleGridTech.checked
-    };
+    });
     localStorage.setItem(LS_GRID_VIS_KEY, JSON.stringify(state.gridVisibility));
     render();
   }
@@ -326,7 +326,7 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
       e.stopPropagation();
       const id = delBtn.dataset.del;
       if (confirm('Delete this project? This cannot be undone.')) {
-        state.projectsList = state.projectsList.filter(p => p.id !== id);
+        setProjectsList(state.projectsList.filter(p => p.id !== id));
         saveProjects();
         localStorage.removeItem('sl-project-' + id);
         deleteProject(id);
@@ -347,7 +347,7 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
 
   $('btnHome').addEventListener('click', () => {
     save();
-    state.currentProjectId = null;
+    setCurrentProjectId(null);
     localStorage.removeItem(LS_LAST_PROJ_KEY);
     renderHome();
   });
@@ -361,7 +361,7 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
 
   document.querySelectorAll('#dropGroup .dropdown-content .btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
-      state.currentGroupMode = e.target.dataset.group;
+      setCurrentGroupMode(e.target.dataset.group);
       const labelMap = {
         'none': 'Group',
         'scene': 'Group: Scene',
@@ -377,7 +377,7 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
 
   initBulkActions();
   $('btnViewMode').addEventListener('click', () => {
-    state.viewMode = state.viewMode === 'list' ? 'grid' : 'list';
+    setViewMode(state.viewMode === 'list' ? 'grid' : 'list');
     $('btnViewMode').innerHTML = state.viewMode === 'list' ? '▦ Grid' : '▤ List';
     try { localStorage.setItem(LS_VIEW_MODE_KEY, state.viewMode); } catch(e) {}
     render();
@@ -441,7 +441,7 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
       try {
         const data = JSON.parse(ev.target.result);
         if (data.title) dom.projectTitle.textContent = data.title;
-        if (data.shots) state.shots = data.shots;
+        if (data.shots) setShots(data.shots);
         if (data.acSets) {
           for (const [k, v] of Object.entries(data.acSets)) {
             if (Array.isArray(v)) state.acSets[k] = new Set(v);
@@ -520,7 +520,7 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
   export function migrateLegacyData() {
     try {
       const p = localStorage.getItem(LS_PROJECTS_KEY);
-      if (p) state.projectsList = JSON.parse(p);
+      if (p) setProjectsList(JSON.parse(p));
     } catch(e) {}
     
     const raw = localStorage.getItem(LS_KEY);
@@ -557,7 +557,7 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
   }
 
   export async function loadProject(id) {
-    state.currentProjectId = id;
+    setCurrentProjectId(id);
     try {
       let rawShots = null;
       // Check localStorage first (migration)
@@ -579,7 +579,7 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
       }
       
       if (rawShots) {
-        state.shots = rawShots;
+        setShots(rawShots);
         let sceneShotCounters = {};
         state.shots.forEach(s => {
           if (s.callTime === undefined) s.callTime = '';
@@ -603,13 +603,13 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
         });
         extractAutocompleteFromShots();
       } else {
-        state.shots = [];
+        setShots([]);
       }
       const p = state.projectsList.find(x => x.id === id);
       dom.projectTitle.textContent = p ? p.title : 'Untitled Project';
     } catch(e) {
       console.error('Failed to load project from IndexedDB:', e);
-      state.shots = [];
+      setShots([]);
       dom.projectTitle.textContent = 'Untitled Project';
     }
     
@@ -617,9 +617,9 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
     $('homeView').style.display = 'none';
     $('editorView').style.display = 'flex';
     
-    state.currentStoryboardId = null;
-    state.dragSrcId = null;
-    state.contextRowId = null;
+    setCurrentStoryboardId(null);
+    setDragSrcId(null);
+    setContextRowId(null);
     hideContextMenu();
     clearSelection();
     updateSelectionUI();
@@ -650,11 +650,11 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
   }
 
   export function seedDefaults() {
-    state.shots = [
+    setShots([
       createShot({ num: '1', shot: '1', movement: 'STATIC', shotSize: 'WIDE', characters: 'Alex', location: 'EXT. Rooftop', description: 'Wide establishing shot of skyline at dusk', notes: 'Camera on tripod', duration: '00:05', callTime: '07:00' }),
       createShot({ num: '2', shot: '2', movement: 'HANDHELD', shotSize: 'CU', characters: 'Alex, Sam', location: 'INT. Kitchen', description: 'Close-up dialogue, over-the-shoulder', notes: 'Check lighting reflection', props: 'Coffee mug, newspaper', duration: '00:30' }),
       createShot({ num: '3', shot: '3', movement: 'DOLLY', shotSize: 'MS', characters: 'Sam', location: 'EXT. Rooftop', description: 'Tracking shot following character to edge', notes: 'Dolly track needs leveling', duration: '01:20', priority: 'high' }),
-    ];
+    ]);
     dom.projectTitle.textContent = 'Untitled Project';
     save();
   }
@@ -690,7 +690,7 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
     if (t) t.addEventListener('change', saveGridVis);
   });
   const loadedRatio = localStorage.getItem(LS_RATIO_KEY);
-  if (loadedRatio) state.boardRatio = loadedRatio;
+  if (loadedRatio) setBoardRatio(loadedRatio);
   applyBoardRatio();
   
   initTableDelegation();

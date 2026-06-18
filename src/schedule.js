@@ -1,4 +1,4 @@
-import { state, getSceneGroup } from './state.js';
+import { state, getSceneGroup, setScheduleMap, setGroupTotals } from './state.js';
 // Duration: "HH:MM" → total minutes (0 if empty, -1 if invalid)
   export function parseDuration(s) {
     if (!s) return 0;
@@ -85,8 +85,8 @@ import { state, getSceneGroup } from './state.js';
     // ── Schedule Computation ───────────────────────
   // Duration is now HH:MM (hours:minutes); all schedule values in minutes.
   export function cascadeSchedule() {
-    state.scheduleMap = {};
-    state.groupTotals = {};
+    setScheduleMap({});
+    setGroupTotals({});
     let prevEndMin = -1;
 
     for (let i = 0; i < state.shots.length; i++) {

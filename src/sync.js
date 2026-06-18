@@ -1,4 +1,4 @@
-import { state, LS_SYNC_CODE_KEY, LS_LAST_PROJ_KEY } from './state.js';
+import { state, LS_SYNC_CODE_KEY, LS_LAST_PROJ_KEY, setSyncStatus, setSyncPasscode, setProjectsList } from './state.js';
 import { dom } from './dom.js';
 import { getProject } from './db.js';
 import { renderHome, saveProjects, loadProject } from './main.js';
@@ -11,7 +11,7 @@ export async function hashPasscode(passcode) {
 }
 
 export function updateSyncStatus(status) {
-  state.syncStatus = status;
+  setSyncStatus(status);
   const text = status === 'offline' ? 'Offline Mode' 
              : status === 'syncing' ? 'Syncing...' 
              : status === 'synced' ? 'Synced' 
@@ -47,7 +47,7 @@ export async function syncRequest(action, payload = null) {
 export async function connectAndSync(passcode) {
   try {
     const hashed = await hashPasscode(passcode);
-    state.syncPasscode = hashed;
+    setSyncPasscode(hashed);
     localStorage.setItem(LS_SYNC_CODE_KEY, hashed);
     dom.syncDisconnect.style.display = 'inline-block';
     
@@ -71,7 +71,7 @@ export async function connectAndSync(passcode) {
       }
     });
     
-    state.projectsList = Array.from(mergedMap.values());
+    setProjectsList(Array.from(mergedMap.values()));
     saveProjects();
     
     for (const p of localOnlyOrNewer) {
@@ -114,8 +114,8 @@ export function initSyncListeners() {
 
   dom.syncDisconnect.addEventListener('click', () => {
     if (confirm('Disconnect from Cloud Sync? Your data will remain locally, but will no longer sync.')) {
-      state.syncPasscode = null;
-      state.syncStatus = 'offline';
+      setSyncPasscode(null);
+      setSyncStatus('offline');
       localStorage.removeItem(LS_SYNC_CODE_KEY);
       dom.syncDisconnect.style.display = 'none';
       updateSyncStatus('offline');
@@ -128,7 +128,7 @@ export function initSyncListeners() {
 export async function initSyncAndLoad() {
   const savedSyncCode = localStorage.getItem(LS_SYNC_CODE_KEY);
   if (savedSyncCode) {
-    state.syncPasscode = savedSyncCode;
+    setSyncPasscode(savedSyncCode);
     dom.syncDisconnect.style.display = 'inline-block';
     updateSyncStatus('syncing');
     
@@ -142,7 +142,7 @@ export async function initSyncAndLoad() {
           mergedMap.set(p.id, p);
         }
       });
-      state.projectsList = Array.from(mergedMap.values());
+      setProjectsList(Array.from(mergedMap.values()));
       saveProjects();
       updateSyncStatus('synced');
     } else {

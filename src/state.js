@@ -11,6 +11,25 @@ export const state = {
   syncPasscode: null, syncStatus: 'offline' // 'offline' | 'syncing' | 'synced' | 'error'
 };
 
+export function setProjectsList(val) { state.projectsList = val; }
+export function setCurrentProjectId(val) { state.currentProjectId = val; }
+export function setShots(val) { state.shots = val; }
+export function setViewMode(val) { state.viewMode = val; }
+export function setCurrentGroupMode(val) { state.currentGroupMode = val; }
+export function setContextRowId(val) { state.contextRowId = val; }
+export function setDragSrcId(val) { state.dragSrcId = val; }
+export function setCurrentStoryboardId(val) { state.currentStoryboardId = val; }
+export function setLbShotIds(val) { state.lbShotIds = val; }
+export function setLbIndex(val) { state.lbIndex = val; }
+export function setCurrentPreset(val) { state.currentPreset = val; }
+export function setBoardRatio(val) { state.boardRatio = val; }
+export function setAcSets(val) { state.acSets = val; }
+export function setScheduleMap(val) { state.scheduleMap = val; }
+export function setGroupTotals(val) { state.groupTotals = val; }
+export function setGridVisibility(val) { state.gridVisibility = val; }
+export function setSyncPasscode(val) { state.syncPasscode = val; }
+export function setSyncStatus(val) { state.syncStatus = val; }
+
 export function clearSelection() {
   state.selectedIds.clear();
 }

@@ -1,6 +1,6 @@
 import { dom, $, customPrompt } from './dom.js';
-import { state, getSceneGroup, createShot, createBlock, PRIORITY_CYCLE, MOVEMENT_TYPES, SHOT_SIZES, LENS_OPTIONS, uid } from './state.js';
-import { parseDuration, formatDuration, formatTime, formatOverrun, isValidDuration, isValidTime, normalizeDuration, normalizeTime } from './schedule.js';
+import { state, getSceneGroup, createShot, createBlock, PRIORITY_CYCLE, MOVEMENT_TYPES, SHOT_SIZES, LENS_OPTIONS, uid, setCurrentStoryboardId, setContextRowId, setShots } from './state.js';
+import { parseDuration, formatDuration, formatTime, formatOverrun, isValidDuration, isValidTime, normalizeDuration, normalizeTime, cascadeSchedule } from './schedule.js';
 import { openLightbox } from './lightbox.js';
 import { showAutocomplete, hideAutocomplete, handleAutocompleteKey, filterAutocomplete, isAutocompleteActiveFor, scheduleAutocompleteHide, cancelAutocompleteHide, saveAutocomplete } from './autocomplete.js';
 import { render, save, getFilteredShots, updateStats, esc, applyPresetLayout } from './main.js';
@@ -114,6 +114,66 @@ import { getGroupInfo } from './grouping.js';
 
     dom.shotBody.innerHTML = html;
     updateStats();
+  }
+
+  export function updateShotDOM(id, field, val) {
+    const row = dom.shotBody.querySelector(`tr[data-id="${id}"]`);
+    const card = dom.gridWrap.querySelector(`.grid-card[data-id="${id}"]`);
+    
+    [row, card].forEach(el => {
+      if (!el) return;
+      const node = el.querySelector(`[data-field="${field}"]`);
+      if (!node) return;
+      
+      if (node.tagName === 'INPUT' || node.tagName === 'SELECT') {
+        if (node.value !== val) node.value = val;
+      } else if (node.hasAttribute('contenteditable')) {
+        if (document.activeElement !== node && node.textContent !== val) {
+          node.textContent = val;
+        }
+      }
+    });
+  }
+
+  export function refreshScheduleDOM() {
+    cascadeSchedule();
+    let cumulative = 0;
+    state.shots.forEach(s => {
+      const dur = parseDuration(s.duration);
+      if (dur > 0) cumulative += dur;
+      
+      const sched = state.scheduleMap[s.id] || { callMin: -1, endMin: -1, overrunMin: 0, isInherited: false };
+      const callTimeVal = sched.isInherited ? formatTime(sched.callMin) : (s.callTime || '');
+      const endTimeStr = sched.endMin >= 0 ? formatTime(sched.endMin) : '--:--';
+      
+      const row = dom.shotBody.querySelector(`tr[data-id="${s.id}"]`);
+      if (row) {
+        const timeInput = row.querySelector('.time-input');
+        if (timeInput) {
+          timeInput.value = callTimeVal;
+          timeInput.classList.toggle('inherited', sched.isInherited);
+          timeInput.dataset.inherited = sched.isInherited;
+        }
+        const printTimeSpan = row.querySelector('.time-input + .print-only');
+        if (printTimeSpan) printTimeSpan.textContent = callTimeVal;
+        
+        const endTimeEl = row.querySelector('.end-time');
+        if (endTimeEl) endTimeEl.textContent = endTimeStr;
+        
+        const runTimeEl = row.querySelector('.running-time');
+        if (runTimeEl) runTimeEl.textContent = formatDuration(cumulative);
+      }
+      
+      const card = dom.gridWrap.querySelector(`.grid-card[data-id="${s.id}"]`);
+      if (card) {
+        const timeInput = card.querySelector('.time-input');
+        if (timeInput) {
+          timeInput.value = callTimeVal;
+          timeInput.classList.toggle('inherited', sched.isInherited);
+          timeInput.dataset.inherited = sched.isInherited;
+        }
+      }
+    });
   }
 
 
@@ -246,6 +306,15 @@ import { getGroupInfo } from './grouping.js';
   // ── Event Binding: Table ───────────────────────
   let lastCheckedId = null;
 
+  export function softRender() {
+    if (state.currentGroupMode !== 'none') {
+      render();
+    } else {
+      refreshScheduleDOM();
+      updateStats();
+    }
+  }
+
   export function initTableDelegation() {
     const bind = (evt, handler, opts) => {
       dom.shotBody.addEventListener(evt, handler, opts);
@@ -306,7 +375,7 @@ import { getGroupInfo } from './grouping.js';
             const trimmed = customVal.trim();
             if (state.acSets[field]) { state.acSets[field].add(trimmed); saveAutocomplete(); }
             applyBulkEdit(shot.id, field, trimmed);
-            save(); render();
+            save(); softRender();
           } else {
             target.value = shot[field] || '';
           }
@@ -317,10 +386,10 @@ import { getGroupInfo } from './grouping.js';
           applyBulkEdit(shot.id, 'blockType', target.value);
           const lbl = row.querySelector('.block-label');
           if (lbl) lbl.style.display = target.value === 'CUSTOM' ? '' : 'none';
-          save(); render();
+          save(); softRender();
         } else {
           applyBulkEdit(shot.id, field, target.value);
-          save(); render();
+          save(); softRender();
         }
       }
     });
@@ -381,7 +450,7 @@ import { getGroupInfo } from './grouping.js';
               }
             }
             
-            save(); render(); 
+            save(); softRender(); 
           }
         }
       }
@@ -393,7 +462,7 @@ import { getGroupInfo } from './grouping.js';
           const normalized = normalizeDuration(target.value.trim());
           applyBulkEdit(shot.id, 'duration', normalized);
           target.value = normalized;
-          save(); render();
+          save(); softRender();
         }
       }
 
@@ -420,7 +489,7 @@ import { getGroupInfo } from './grouping.js';
             target.value = normalized;
             target.classList.remove('invalid');
           }
-          save(); render();
+          save(); softRender();
         }
       }
     });
@@ -502,7 +571,7 @@ import { getGroupInfo } from './grouping.js';
         if (shot.storyboard) {
           openLightbox(id);
         } else {
-          state.currentStoryboardId = id;
+          setCurrentStoryboardId(id);
           dom.fileInput.click();
         }
         return;
@@ -512,7 +581,7 @@ import { getGroupInfo } from './grouping.js';
       if (actionsBtn) {
         e.stopPropagation();
         const row = actionsBtn.closest('tr, .grid-card');
-        state.contextRowId = row.dataset.id;
+        setContextRowId(row.dataset.id);
         showContextMenu(e.clientX, e.clientY);
         return;
       }
@@ -575,7 +644,7 @@ import { getGroupInfo } from './grouping.js';
 
   export function hideContextMenu() {
     dom.contextMenu.classList.remove('visible');
-    state.contextRowId = null;
+    setContextRowId(null);
   }
 
   document.addEventListener('click', hideContextMenu);
@@ -583,7 +652,7 @@ import { getGroupInfo } from './grouping.js';
     const row = e.target.closest('tr[data-id]');
     if (row) {
       e.preventDefault();
-      state.contextRowId = row.dataset.id;
+      setContextRowId(row.dataset.id);
       showContextMenu(e.clientX, e.clientY);
     }
   });
@@ -594,7 +663,9 @@ import { getGroupInfo } from './grouping.js';
     if (src) {
       const idx = state.shots.indexOf(src);
       const dup = createShot({ ...src, id: uid(), num: String(state.shots.length + 1), callTime: '' });
-      state.shots.splice(idx + 1, 0, dup);
+      const updatedShots = [...state.shots];
+      updatedShots.splice(idx + 1, 0, dup);
+      setShots(updatedShots);
       save(); render();
     }
   });
@@ -619,7 +690,9 @@ import { getGroupInfo } from './grouping.js';
       } else {
         defaultShot = '1';
       }
-      state.shots.splice(idx, 0, createShot({ num: defaultNum, shot: defaultShot }));
+      const updatedShots = [...state.shots];
+      updatedShots.splice(idx, 0, createShot({ num: defaultNum, shot: defaultShot }));
+      setShots(updatedShots);
       save(); render();
     }
   });
@@ -644,14 +717,16 @@ import { getGroupInfo } from './grouping.js';
       } else {
         defaultShot = '1';
       }
-      state.shots.splice(idx + 1, 0, createShot({ num: defaultNum, shot: defaultShot }));
+      const updatedShots = [...state.shots];
+      updatedShots.splice(idx + 1, 0, createShot({ num: defaultNum, shot: defaultShot }));
+      setShots(updatedShots);
       save(); render();
     }
   });
 
   $('cmDelete').addEventListener('click', () => {
     if (!state.contextRowId) return;
-    state.shots = state.shots.filter(s => s.id !== state.contextRowId);
+    setShots(state.shots.filter(s => s.id !== state.contextRowId));
     save(); render();
   });
 

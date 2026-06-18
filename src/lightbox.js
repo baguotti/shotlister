@@ -1,5 +1,5 @@
 import { dom } from './dom.js';
-import { state } from './state.js';
+import { state, setLbShotIds, setLbIndex, setCurrentStoryboardId } from './state.js';
 import { render, save } from './main.js';
 import { formatTime, formatOverrun } from './schedule.js';
   // ── Lightbox ───────────────────────────────────
@@ -19,12 +19,12 @@ import { formatTime, formatOverrun } from './schedule.js';
       dom.shotBody.querySelectorAll('tr[data-id]')
     ).map(tr => tr.dataset.id);
 
-    state.lbShotIds = renderedIds.filter(rid => {
+    setLbShotIds(renderedIds.filter(rid => {
       const s = state.shots.find(s => s.id === rid);
       return s && s.storyboard;
-    });
+    }));
 
-    state.lbIndex = state.lbShotIds.indexOf(id);
+    setLbIndex(state.lbShotIds.indexOf(id));
     if (state.lbIndex === -1) return; // shouldn't happen
 
     lbRefresh();
@@ -35,8 +35,8 @@ import { formatTime, formatOverrun } from './schedule.js';
   export function closeLightbox() {
     dom.lightbox.classList.remove('lb-visible');
     document.body.style.overflow = '';
-    state.lbShotIds = [];
-    state.lbIndex = -1;
+    setLbShotIds([]);
+    setLbIndex(-1);
   }
 
   function lbRefresh() {
@@ -108,13 +108,13 @@ import { formatTime, formatOverrun } from './schedule.js';
     
     dom.lbPrev.classList.toggle('disabled', state.lbIndex === 0);
     dom.lbNext.classList.toggle('disabled', state.lbIndex === state.lbShotIds.length - 1);
-    state.currentStoryboardId = id; // keep in sync for Replace
+    setCurrentStoryboardId(id); // keep in sync for Replace
   }
 
   function lbNavigate(dir) {
     const next = state.lbIndex + dir;
     if (next < 0 || next >= state.lbShotIds.length) return;
-    state.lbIndex = next;
+    setLbIndex(next);
     lbRefresh();
   }
 
@@ -137,12 +137,13 @@ import { formatTime, formatOverrun } from './schedule.js';
     shot.storyboard = '';
     save(); render();
 
-    // Remove from navigation list
-    state.lbShotIds.splice(state.lbIndex, 1);
+    const newIds = [...state.lbShotIds];
+    newIds.splice(state.lbIndex, 1);
+    setLbShotIds(newIds);
     if (state.lbShotIds.length === 0) {
       closeLightbox();
     } else {
-      state.lbIndex = Math.min(state.lbIndex, state.lbShotIds.length - 1);
+      setLbIndex(Math.min(state.lbIndex, state.lbShotIds.length - 1));
       lbRefresh();
     }
   });

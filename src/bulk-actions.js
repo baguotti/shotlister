@@ -1,4 +1,4 @@
-import { state, clearSelection, uid } from './state.js';
+import { state, clearSelection, uid, setShots } from './state.js';
 import { dom, $ } from './dom.js';
 import { render, save } from './main.js';
 
@@ -37,12 +37,16 @@ export function initBulkActions() {
   $('btnBulkClear')?.addEventListener('click', () => {
     clearSelection();
     updateSelectionUI();
-    render();
+    document.querySelectorAll('tr.selected, .grid-card.selected').forEach(el => {
+      el.classList.remove('selected');
+      const cb = el.querySelector('.row-checkbox');
+      if (cb) cb.checked = false;
+    });
   });
 
   $('btnBulkDelete')?.addEventListener('click', () => {
     if (!confirm(`Delete ${state.selectedIds.size} selected items?`)) return;
-    state.shots = state.shots.filter(s => !state.selectedIds.has(s.id));
+    setShots(state.shots.filter(s => !state.selectedIds.has(s.id)));
     clearSelection();
     save();
     render();
@@ -60,11 +64,13 @@ export function initBulkActions() {
       return { ...s, id: uid() };
     });
 
+    const updatedShots = [...state.shots];
     if (lastIdx !== -1) {
-      state.shots.splice(lastIdx + 1, 0, ...newShots);
+      updatedShots.splice(lastIdx + 1, 0, ...newShots);
     } else {
-      state.shots.push(...newShots);
+      updatedShots.push(...newShots);
     }
+    setShots(updatedShots);
     
     clearSelection();
     newShots.forEach(s => state.selectedIds.add(s.id));
