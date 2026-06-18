@@ -5,8 +5,9 @@ export const dom = {
   shotBody: $('shotBody'),
   settingsView: $('settingsView'),
   btnViewMode: $('btnViewMode'),
-  btnGroupMode: $('btnGroupMode'),
-  btnExportCSV: $('btnExportCSV'),
+  btnImport: $('btnImport'),
+  btnExport: $('btnExport'),
+  importInput: $('importInput'),
   gridSettingsBar: $('gridSettingsBar'),
   
   // Grid Toggles
@@ -31,6 +32,7 @@ export const dom = {
   lbReplace: $('lbReplace'),
   lbDelete: $('lbDelete'),
   lbDescription: $('lbDescription'),
+  lbNotes: $('lbNotes'),
   lbMeta: $('lbMeta'),
   lbTiming: $('lbTiming'),
   lbCast: $('lbCast'),

@@ -3,7 +3,7 @@ import { formatTime, parseDuration } from './schedule.js';
 import { getFilteredShots } from './main.js';
   // ── CSV Export ─────────────────────────────────
   export function exportCSV() {
-    const headers = ['Scene','Shot','Priority','Location','Description','Character','Shot Size','Lens','Movement','Props','Duration','Call Time','End Time'];
+    const headers = ['Scene','Shot','Priority','Location','Description','Notes','Character','Shot Size','Lens','Movement','Props','Duration','Call Time','End Time'];
     const rows = state.shots.map(s => {
       const sched = state.scheduleMap[s.id] || { callMin: -1, endMin: -1 };
       if (s.kind === 'block') {
@@ -12,6 +12,7 @@ import { getFilteredShots } from './main.js';
           '',
           '',
           `"${(s.label||'').replace(/"/g,'""')}"`,
+          `"${(s.description||'').replace(/"/g,'""')}"`,
           `"${(s.notes||'').replace(/"/g,'""')}"`,
           '',
           '',
@@ -28,6 +29,7 @@ import { getFilteredShots } from './main.js';
         s.shot || '',
         s.priority,
         `"${(s.location||'').replace(/"/g,'""')}"`,
+        `"${(s.description||'').replace(/"/g,'""')}"`,
         `"${(s.notes||'').replace(/"/g,'""')}"`,
         `"${(s.characters||'').replace(/"/g,'""')}"`,
         s.shotSize || '',

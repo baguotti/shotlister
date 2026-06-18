@@ -92,11 +92,18 @@ import { formatTime, formatOverrun } from './schedule.js';
       dom.lbCast.style.display = 'none';
     }
     
-    dom.lbDescription.textContent = shot.notes || '';
-    if (shot.notes) {
+    dom.lbDescription.textContent = shot.description || '';
+    if (shot.description) {
       dom.lbDescription.style.display = '';
     } else {
       dom.lbDescription.style.display = 'none';
+    }
+
+    dom.lbNotes.textContent = shot.notes || '';
+    if (shot.notes) {
+      dom.lbNotes.style.display = '';
+    } else {
+      dom.lbNotes.style.display = 'none';
     }
     
     dom.lbPrev.classList.toggle('disabled', state.lbIndex === 0);

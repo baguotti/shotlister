@@ -27,6 +27,7 @@ export function clearSelection() {
   export const LS_THEME_KEY = 'sl-color-scheme';
   export const LS_PRESET_KEY = 'sl-preset';
   export const LS_RATIO_KEY = 'sl-ratio';
+  export const LS_VIEW_MODE_KEY = 'sl-view-mode';
   export const LS_GRID_VIS_KEY = 'sl-grid-vis';
   export const LS_SYNC_CODE_KEY = 'sl-sync-code';
   
@@ -50,14 +51,14 @@ export function clearSelection() {
 
 
   export const SCENE_COLORS = [
-    '#8b5cf6', '#ec4899', '#f43f5e', '#f97316',
-    '#eab308', '#84cc16', '#10b981', '#06b6d4',
-    '#3b82f6', '#6366f1', '#14b8a6', '#f59e0b'
+    '#cbc4ef', '#efc4c4', '#efd4c4', '#efebc4',
+    '#c4efce', '#c4dfef', '#c0f0e8', '#d6d6d6',
+    '#efc4e9', '#efe3c4', '#cec4ef', '#c4efdd'
   ];
   export const SCENE_BGS = [
-    'rgba(139, 92, 246, 0.12)', 'rgba(236, 72, 153, 0.12)', 'rgba(244, 63, 94, 0.12)', 'rgba(249, 115, 22, 0.12)',
-    'rgba(234, 179, 8, 0.12)', 'rgba(132, 204, 22, 0.12)', 'rgba(16, 185, 129, 0.12)', 'rgba(6, 182, 212, 0.12)',
-    'rgba(59, 130, 246, 0.12)', 'rgba(99, 102, 241, 0.12)', 'rgba(20, 184, 166, 0.12)', 'rgba(245, 158, 11, 0.12)'
+    'rgba(203, 196, 239, 0.12)', 'rgba(239, 196, 196, 0.12)', 'rgba(239, 212, 196, 0.12)', 'rgba(239, 235, 196, 0.12)',
+    'rgba(196, 239, 206, 0.12)', 'rgba(196, 223, 239, 0.12)', 'rgba(192, 240, 232, 0.12)', 'rgba(214, 214, 214, 0.12)',
+    'rgba(239, 196, 233, 0.12)', 'rgba(239, 227, 196, 0.12)', 'rgba(206, 196, 239, 0.12)', 'rgba(196, 239, 221, 0.12)'
   ];
 
   export function getSceneGroup(numStr) {
@@ -106,6 +107,7 @@ export function clearSelection() {
       lens: '',
       characters: '',
       location: '',
+      description: '',
       notes: '',
       props: '',
       duration: '',
@@ -123,6 +125,7 @@ export function clearSelection() {
       label: '',
       duration: '',
       callTime: '',
+      description: '',
       notes: '',
       ...overrides
     };

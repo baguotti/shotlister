@@ -56,12 +56,27 @@
       <button data-preset="L" title="Large">L</button>
       <button data-preset="XL" title="Cinematic">XL</button>
     </div>
-    <button class="btn" id="btnGroupMode">⊞ Group</button>
     <button class="btn" id="btnViewMode" title="Toggle Grid/List View">▦ Grid</button>
-    <button class="btn" id="btnViewToggle">⚙️ Custom</button>
-    <button class="btn" id="btnExportCSV">↓ CSV</button>
-    <button class="btn" id="btnPrint">⎙ Print</button>
-    <button class="btn" id="btnThemeToggle">◐ Theme</button>
+    <div class="dropdown" id="dropGroup">
+      <button class="btn dropdown-toggle" id="btnDropGroup">⊞ Group ▾</button>
+      <div class="dropdown-content">
+        <button class="btn" data-group="none">None</button>
+        <button class="btn" data-group="scene">By Scene</button>
+        <button class="btn" data-group="location">By Location</button>
+        <button class="btn" data-group="movement">By Movement</button>
+      </div>
+    </div>
+    <button class="btn" id="btnViewToggle" title="Custom Columns">⚙️</button>
+    <button class="btn" id="btnThemeToggle" title="Theme">◐</button>
+    <div class="dropdown" id="dropFile">
+      <button class="btn dropdown-toggle" id="btnDropFile">File ▾</button>
+      <div class="dropdown-content">
+        <button class="btn" id="btnImport">↑ Import</button>
+        <button class="btn" id="btnExport">↓ Export</button>
+        <button class="btn" id="btnPrint">⎙ Print</button>
+      </div>
+    </div>
+    <input type="file" id="importInput" accept=".json" style="display:none;">
   </div>
 
   <!-- Grid Settings Bar -->
@@ -111,7 +126,8 @@
           <th class="col-shotnum">SHOT</th>
           <th class="col-priority">Priority</th>
           <th class="col-location">Location</th>
-          <th class="col-notes">Description</th>
+          <th class="col-desc">Description</th>
+          <th class="col-notes">Notes</th>
           <th class="col-chars">Character</th>
           <th class="col-shotsize">Shot Size</th>
           <th class="col-lens hide-tablet">Lens</th>
@@ -183,6 +199,7 @@
         <div class="lb-timing" id="lbTiming"></div>
         <div class="lb-cast" id="lbCast"></div>
         <div class="lb-description" id="lbDescription"></div>
+        <div class="lb-notes" id="lbNotes" style="font-size: 0.9em; opacity: 0.8; margin-top: 4px; border-top: 1px dashed rgba(255, 255, 255, 0.1); padding-top: 4px;"></div>
       </div>
     </div>
     <button class="lb-arrow lb-arrow-next" id="lbNext" title="Next (→)">&gt;</button>

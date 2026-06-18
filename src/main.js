@@ -1,11 +1,10 @@
 import { dom, $ } from './dom.js';
-import { state, PRESETS, createShot, createBlock, LS_KEY, LS_TITLE_KEY, LS_PROJECTS_KEY, LS_LAST_PROJ_KEY, LS_THEME_KEY, LS_PRESET_KEY, LS_RATIO_KEY, LS_GRID_VIS_KEY, LS_SYNC_CODE_KEY, uid, GROUP_MODES, clearSelection } from './state.js';
+import { state, PRESETS, createShot, createBlock, LS_KEY, LS_TITLE_KEY, LS_PROJECTS_KEY, LS_LAST_PROJ_KEY, LS_THEME_KEY, LS_PRESET_KEY, LS_RATIO_KEY, LS_VIEW_MODE_KEY, LS_GRID_VIS_KEY, LS_SYNC_CODE_KEY, uid, GROUP_MODES, clearSelection } from './state.js';
 import { cascadeSchedule, formatDuration, formatOverrun, parseDuration, formatTime } from './schedule.js';
 import { renderTable, renderGrid, hideContextMenu, initTableDelegation } from './render-table.js';
 import { renderSettings } from './render-settings.js';
 import { renderTimeline } from './timeline.js';
 import { loadAutocomplete, extractAutocompleteFromShots } from './autocomplete.js';
-import { exportCSV } from './csv.js';
 import { initPWA } from './pwa.js';
 import { getProject, putProject, deleteProject } from './db.js';
 
@@ -149,6 +148,7 @@ import { getProject, putProject, deleteProject } from './db.js';
   export function saveLayout() {
     try {
       localStorage.setItem(LS_PRESET_KEY, state.currentPreset);
+      localStorage.setItem(LS_VIEW_MODE_KEY, state.viewMode);
     } catch(e) { /* ignore */ }
   }
 
@@ -160,6 +160,11 @@ import { getProject, putProject, deleteProject } from './db.js';
         document.querySelectorAll('#presetCtrl button').forEach(btn => {
           btn.classList.toggle('active', btn.dataset.preset === pr);
         });
+      }
+      const vm = localStorage.getItem(LS_VIEW_MODE_KEY);
+      if (vm === 'list' || vm === 'grid') {
+        state.viewMode = vm;
+        $('btnViewMode').innerHTML = state.viewMode === 'list' ? '▦ Grid' : '▤ List';
       }
     } catch(e) { /* ignore */ }
   }
@@ -458,19 +463,18 @@ import { getProject, putProject, deleteProject } from './db.js';
     $('btnToggleSummary').classList.toggle('active', !isHidden);
   });
 
-  $('btnGroupMode').addEventListener('click', () => {
-    const idx = GROUP_MODES.indexOf(state.currentGroupMode);
-    state.currentGroupMode = GROUP_MODES[(idx + 1) % GROUP_MODES.length];
-    const btn = $('btnGroupMode');
-    if (state.currentGroupMode === 'none') {
-      btn.textContent = '⊞ Group';
-      btn.classList.remove('active');
-    } else {
-      const label = state.currentGroupMode === 'location' ? 'Location' : state.currentGroupMode === 'movement' ? 'Movement' : 'Scene';
-      btn.textContent = `⊞ Group: ${label}`;
-      btn.classList.add('active');
-    }
-    render();
+  document.querySelectorAll('#dropGroup .dropdown-content .btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      state.currentGroupMode = e.target.dataset.group;
+      const labelMap = {
+        'none': 'Group',
+        'scene': 'Group: Scene',
+        'location': 'Group: Loc',
+        'movement': 'Group: Move'
+      };
+      $('btnDropGroup').textContent = `⊞ ${labelMap[state.currentGroupMode] || 'Group'} ▾`;
+      render();
+    });
   });
 
   // ── Bulk Actions ───────────────────────────────
@@ -514,6 +518,7 @@ import { getProject, putProject, deleteProject } from './db.js';
   $('btnViewMode').addEventListener('click', () => {
     state.viewMode = state.viewMode === 'list' ? 'grid' : 'list';
     $('btnViewMode').innerHTML = state.viewMode === 'list' ? '▦ Grid' : '▤ List';
+    try { localStorage.setItem(LS_VIEW_MODE_KEY, state.viewMode); } catch(e) {}
     render();
   });
 
@@ -522,7 +527,74 @@ import { getProject, putProject, deleteProject } from './db.js';
     dom.settingsView.showModal();
   });
 
-  $('btnExportCSV').addEventListener('click', exportCSV);
+  // ── Dropdown click-to-open logic ───────────────
+  function initDropdown(dropId) {
+    const drop = $(dropId);
+    const toggle = drop.querySelector('.dropdown-toggle');
+    toggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = drop.classList.contains('open');
+      // close all first
+      document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
+      if (!isOpen) drop.classList.add('open');
+    });
+    // clicking any item inside closes the dropdown
+    drop.querySelector('.dropdown-content').addEventListener('click', () => {
+      drop.classList.remove('open');
+    });
+  }
+  initDropdown('dropGroup');
+  initDropdown('dropFile');
+  // click anywhere outside closes all dropdowns
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
+  });
+
+  $('btnExport').addEventListener('click', () => {
+    const data = {
+      title: dom.projectTitle.textContent.trim() || 'shotlist',
+      shots: state.shots,
+      acSets: {}
+    };
+    for (const [k, v] of Object.entries(state.acSets)) {
+      data.acSets[k] = Array.from(v);
+    }
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = data.title + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  $('btnImport').addEventListener('click', () => {
+    dom.importInput.click();
+  });
+
+  dom.importInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        if (data.title) dom.projectTitle.textContent = data.title;
+        if (data.shots) state.shots = data.shots;
+        if (data.acSets) {
+          for (const [k, v] of Object.entries(data.acSets)) {
+            if (Array.isArray(v)) state.acSets[k] = new Set(v);
+          }
+        }
+        save();
+        render();
+      } catch (err) {
+        alert('Failed to parse JSON file.');
+      }
+      dom.importInput.value = '';
+    };
+    reader.readAsText(file);
+  });
 
   $('btnThemeToggle').addEventListener('click', () => {
     const root = document.documentElement;
@@ -718,9 +790,9 @@ import { getProject, putProject, deleteProject } from './db.js';
 
   export function seedDefaults() {
     state.shots = [
-      createShot({ num: '1', shot: '1', movement: 'STATIC', shotSize: 'WIDE', characters: 'Alex', location: 'EXT. Rooftop', notes: 'Wide establishing shot of skyline at dusk', duration: '00:05', callTime: '07:00' }),
-      createShot({ num: '2', shot: '2', movement: 'HANDHELD', shotSize: 'CU', characters: 'Alex, Sam', location: 'INT. Kitchen', notes: 'Close-up dialogue, over-the-shoulder', props: 'Coffee mug, newspaper', duration: '00:30' }),
-      createShot({ num: '3', shot: '3', movement: 'DOLLY', shotSize: 'MS', characters: 'Sam', location: 'EXT. Rooftop', notes: 'Tracking shot following character to edge', duration: '01:20', priority: 'high' }),
+      createShot({ num: '1', shot: '1', movement: 'STATIC', shotSize: 'WIDE', characters: 'Alex', location: 'EXT. Rooftop', description: 'Wide establishing shot of skyline at dusk', notes: 'Camera on tripod', duration: '00:05', callTime: '07:00' }),
+      createShot({ num: '2', shot: '2', movement: 'HANDHELD', shotSize: 'CU', characters: 'Alex, Sam', location: 'INT. Kitchen', description: 'Close-up dialogue, over-the-shoulder', notes: 'Check lighting reflection', props: 'Coffee mug, newspaper', duration: '00:30' }),
+      createShot({ num: '3', shot: '3', movement: 'DOLLY', shotSize: 'MS', characters: 'Sam', location: 'EXT. Rooftop', description: 'Tracking shot following character to edge', notes: 'Dolly track needs leveling', duration: '01:20', priority: 'high' }),
     ];
     dom.projectTitle.textContent = 'Untitled Project';
     save();

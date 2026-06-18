@@ -172,6 +172,7 @@ import { render, save, getFilteredShots, updateStats, esc, applyPresetLayout, in
       <td class="shot-num" contenteditable="true" data-field="shot">${esc(s.shot || '')}</td>
       <td style="text-align: center;"><span class="priority-label" data-p="${s.priority}" title="Priority: ${s.priority}">${prioDisplay}</span></td>
       <td contenteditable="true" data-field="location">${esc(s.location)}</td>
+      <td contenteditable="true" data-field="description">${esc(s.description)}</td>
       <td contenteditable="true" data-field="notes">${esc(s.notes)}</td>
       <td contenteditable="true" data-field="characters">${esc(s.characters)}</td>
       <td><select class="screen-only" data-field="shotSize">${sizeOpts}</select><span class="print-only">${esc(s.shotSize || '')}</span></td>
@@ -229,7 +230,8 @@ import { render, save, getFilteredShots, updateStats, esc, applyPresetLayout, in
           <span contenteditable="true" data-field="label" class="block-label" data-placeholder="Label..." style="${s.blockType === 'CUSTOM' ? 'display:inline-block;' : 'display:none;'}">${esc(s.label || '')}</span>
         </div>
       </td>
-      <td></td>
+      <td></td> <!-- Empty cell for Notes -->
+      <td></td> <!-- Empty cell for Characters -->
       <td></td>
       <td class="hide-tablet"></td>
       <td></td>
@@ -446,7 +448,7 @@ import { render, save, getFilteredShots, updateStats, esc, applyPresetLayout, in
       const target = e.target;
       
       const row = target.closest('tr[data-id], .grid-card[data-id]');
-      if (row && (e.metaKey || e.ctrlKey || e.shiftKey) && !target.closest('.row-checkbox') && !target.closest('.actions-btn') && !target.closest('.storyboard-cell')) {
+      if (row && (e.metaKey || e.ctrlKey || e.shiftKey) && !target.closest('.actions-btn') && !target.closest('.storyboard-cell')) {
         e.preventDefault();
         const id = row.dataset.id;
         const checkbox = row.querySelector('.row-checkbox');
@@ -763,7 +765,14 @@ import { render, save, getFilteredShots, updateStats, esc, applyPresetLayout, in
 
       let topRowHTML = (v.location || v.schedule) ? `<div class="gc-row"><div style="flex:1;">${locationHTML}</div>${scheduleHTML}</div>` : '';
 
-      let descHTML = v.description ? `<div class="gc-desc" contenteditable="true" data-field="notes" style="outline:none; min-width:2ch; display:inline-block; min-height: 1.4em;">${esc(s.notes || 'Description...')}</div>` : '';
+      let descHTML = '';
+      if (v.description) {
+        const descText = s.description ? esc(s.description) : '<span style="opacity:0.35;">Description…</span>';
+        descHTML = `<div class="gc-desc" contenteditable="true" data-field="description" style="outline:none;">${descText}</div>`;
+        if (s.notes) {
+          descHTML += `<div class="gc-notes" contenteditable="true" data-field="notes" style="outline:none;">${esc(s.notes)}</div>`;
+        }
+      }
 
       let castPropsHTML = v.castProps ? `<div class="gc-row" style="margin-top:2px;">
           <span style="color:var(--text-1);">Cast: <span contenteditable="true" data-field="characters" style="outline:none; color:var(--text-0);">${esc(s.characters || '')}</span></span>
