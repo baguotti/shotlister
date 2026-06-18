@@ -1,5 +1,5 @@
 import { dom, $ } from './dom.js';
-import { state, PRESETS, createShot, createBlock, LS_KEY, LS_TITLE_KEY, LS_PROJECTS_KEY, LS_LAST_PROJ_KEY, LS_THEME_KEY, LS_PRESET_KEY, uid, GROUP_MODES, clearSelection } from './state.js';
+import { state, PRESETS, createShot, createBlock, LS_KEY, LS_TITLE_KEY, LS_PROJECTS_KEY, LS_LAST_PROJ_KEY, LS_THEME_KEY, LS_PRESET_KEY, LS_RATIO_KEY, uid, GROUP_MODES, clearSelection } from './state.js';
 import { cascadeSchedule, formatDuration, formatOverrun, parseDuration, formatTime } from './schedule.js';
 import { renderTable, hideContextMenu, initTableDelegation } from './render-table.js';
 import { renderSettings } from './render-settings.js';
@@ -7,6 +7,7 @@ import { renderTimeline } from './timeline.js';
 import { loadAutocomplete, extractAutocompleteFromShots } from './autocomplete.js';
 import { exportCSV } from './csv.js';
 import { initPWA } from './pwa.js';
+import { getProject, putProject, deleteProject } from './db.js';
 
   // ── Title Auto-Resize ──────────────────────────
   // Binary-search the largest font-size that keeps text in one line.
@@ -118,6 +119,22 @@ import { initPWA } from './pwa.js';
     if (!btn) return;
     applyPreset(btn.dataset.preset);
   });
+
+  // ── Board Aspect Ratio ─────────────────────────
+  export function applyBoardRatio() {
+    document.documentElement.style.setProperty('--board-ratio', state.boardRatio);
+    if (dom.boardRatioSelect) {
+      dom.boardRatioSelect.value = state.boardRatio;
+    }
+  }
+
+  if (dom.boardRatioSelect) {
+    dom.boardRatioSelect.addEventListener('change', e => {
+      state.boardRatio = e.target.value;
+      localStorage.setItem(LS_RATIO_KEY, state.boardRatio);
+      applyBoardRatio();
+    });
+  }
 
   // ── Layout Persistence ─────────────────────────
   export function saveLayout() {
@@ -340,11 +357,11 @@ import { initPWA } from './pwa.js';
   dom.filterLocation.addEventListener('change', render);
   dom.filterCharacter.addEventListener('input', render);
   dom.filterPriority.addEventListener('change', render);
-  $('btnNewProject').addEventListener('click', () => {
+  $('btnNewProject').addEventListener('click', async () => {
     const pid = uid();
     state.projectsList.unshift({ id: pid, title: 'Untitled Project', updatedAt: Date.now(), count: 0 });
     saveProjects();
-    loadProject(pid);
+    await loadProject(pid);
     seedDefaults();
   });
 
@@ -357,6 +374,7 @@ import { initPWA } from './pwa.js';
         state.projectsList = state.projectsList.filter(p => p.id !== id);
         saveProjects();
         localStorage.removeItem('sl-project-' + id);
+        deleteProject(id);
         if (state.currentProjectId === id) localStorage.removeItem(LS_LAST_PROJ_KEY);
         renderHome();
       }
@@ -521,10 +539,10 @@ import { initPWA } from './pwa.js';
     }
   }
 
-  export function save() {
+  export async function save() {
     if (!state.currentProjectId) return;
     try {
-      localStorage.setItem('sl-project-' + state.currentProjectId, JSON.stringify(state.shots));
+      await putProject(state.currentProjectId, state.shots);
       const p = state.projectsList.find(x => x.id === state.currentProjectId);
       if (p) {
         p.title = dom.projectTitle.textContent.trim() || 'Untitled Project';
@@ -533,16 +551,26 @@ import { initPWA } from './pwa.js';
         saveProjects();
       }
     } catch(e) {
-      console.warn('localStorage save failed:', e);
+      console.error('IndexedDB save failed:', e);
     }
   }
 
-  export function loadProject(id) {
+  export async function loadProject(id) {
     state.currentProjectId = id;
     try {
-      const raw = localStorage.getItem('sl-project-' + id);
-      if (raw) {
-        state.shots = JSON.parse(raw);
+      let rawShots = null;
+      // Check localStorage first (migration)
+      const lsRaw = localStorage.getItem('sl-project-' + id);
+      if (lsRaw) {
+        rawShots = JSON.parse(lsRaw);
+        await putProject(id, rawShots);
+        localStorage.removeItem('sl-project-' + id);
+      } else {
+        rawShots = await getProject(id);
+      }
+      
+      if (rawShots) {
+        state.shots = rawShots;
         let sceneShotCounters = {};
         state.shots.forEach(s => {
           if (s.callTime === undefined) s.callTime = '';
@@ -571,6 +599,7 @@ import { initPWA } from './pwa.js';
       const p = state.projectsList.find(x => x.id === id);
       dom.projectTitle.textContent = p ? p.title : 'Untitled Project';
     } catch(e) {
+      console.error('Failed to load project from IndexedDB:', e);
       state.shots = [];
       dom.projectTitle.textContent = 'Untitled Project';
     }
@@ -627,10 +656,15 @@ import { initPWA } from './pwa.js';
 
     dom.tableWrap.classList.remove('hidden');
     renderTable();
+    applyPresetLayout();
   }
 
   // ── Init ───────────────────────────────────────
   loadLayout();
+  const loadedRatio = localStorage.getItem(LS_RATIO_KEY);
+  if (loadedRatio) state.boardRatio = loadedRatio;
+  applyBoardRatio();
+  
   initTableDelegation();
   migrateLegacyData();
   loadAutocomplete();

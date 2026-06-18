@@ -500,7 +500,7 @@ import { render, save, getFilteredShots, updateStats, updateLocationFilter, esc,
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const MAX = 400;
+        const MAX = 1920;
         let w = img.width, h = img.height;
         if (w > MAX || h > MAX) {
           if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
@@ -508,7 +508,7 @@ import { render, save, getFilteredShots, updateStats, updateLocationFilter, esc,
         }
         canvas.width = w; canvas.height = h;
         canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
 
         const shot = state.shots.find(s => s.id === state.currentStoryboardId);
         if (shot) {

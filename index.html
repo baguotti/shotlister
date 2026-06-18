@@ -86,7 +86,19 @@
         <tr id="headerRow">
           <th class="col-drag"></th>
           <th class="col-select"><input type="checkbox" id="selectAll" title="Select All"></th>
-          <th class="col-storyboard">Board</th>
+          <th class="col-storyboard">
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+              Board
+              <select id="boardRatioSelect" style="font-family: var(--font-mono); font-size: 9px; padding: 2px 6px; border: 1px solid var(--border); border-radius: 12px; background: transparent; color: var(--text-2); outline: none; cursor: pointer; text-align: center;">
+                <option value="auto">Auto</option>
+                <option value="16/9">16:9</option>
+                <option value="2.35/1">2.35:1</option>
+                <option value="2/1">2:1</option>
+                <option value="4/3">4:3</option>
+                <option value="1/1">1:1</option>
+              </select>
+            </div>
+          </th>
           <th class="col-num">SCENE</th>
           <th class="col-shotnum">SHOT</th>
           <th class="col-priority">Priority</th>
@@ -147,17 +159,27 @@
 <div id="lightbox">
   <div class="lb-backdrop" id="lbBackdrop"></div>
   <div class="lb-header">
-    <span class="lb-label" id="lbLabel"></span>
     <button class="lb-close" id="lbClose" title="Close (Esc)">✕</button>
   </div>
   <div class="lb-img-wrap">
-    <button class="lb-arrow lb-arrow-prev" id="lbPrev" title="Previous (←)">&#8592;</button>
-    <img id="lbImg" src="" alt="Storyboard">
-    <button class="lb-arrow lb-arrow-next" id="lbNext" title="Next (→)">&#8594;</button>
+    <button class="lb-arrow lb-arrow-prev" id="lbPrev" title="Previous (←)">&lt;</button>
+    <div class="lb-content-area">
+      <div class="lb-label" id="lbLabel"></div>
+      <img id="lbImg" src="" alt="Storyboard">
+      <div class="lb-details">
+        <div class="lb-meta" id="lbMeta"></div>
+        <div class="lb-timing" id="lbTiming"></div>
+        <div class="lb-cast" id="lbCast"></div>
+        <div class="lb-description" id="lbDescription"></div>
+      </div>
+    </div>
+    <button class="lb-arrow lb-arrow-next" id="lbNext" title="Next (→)">&gt;</button>
   </div>
   <div class="lb-footer">
-    <button class="lb-btn lb-btn-replace" id="lbReplace">Replace</button>
-    <button class="lb-btn lb-btn-delete" id="lbDelete">Delete</button>
+    <div class="lb-actions">
+      <button class="lb-btn lb-btn-replace" id="lbReplace">Replace</button>
+      <button class="lb-btn lb-btn-delete" id="lbDelete">Delete</button>
+    </div>
   </div>
 </div>
 

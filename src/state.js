@@ -5,7 +5,7 @@ export const state = {
   projectsList: [], currentProjectId: null, shots: [], viewMode: 'list', currentGroupMode: 'none',
   contextRowId: null, dragSrcId: null, currentStoryboardId: null, lbShotIds: [], lbIndex: -1,
   selectedIds: new Set(),
-  currentPreset: 'M', acSets: { characters: new Set(), location: new Set(), props: new Set(), shotSize: new Set(), lens: new Set(), movement: new Set() },
+  currentPreset: 'M', boardRatio: 'auto', acSets: { characters: new Set(), location: new Set(), props: new Set(), shotSize: new Set(), lens: new Set(), movement: new Set() },
   scheduleMap: {}, groupTotals: {}
 };
 
@@ -24,6 +24,7 @@ export function clearSelection() {
   export const LS_LAST_PROJ_KEY = 'sl-last-project';
   export const LS_THEME_KEY = 'sl-color-scheme';
   export const LS_PRESET_KEY = 'sl-preset';
+  export const LS_RATIO_KEY = 'sl-ratio';
   
   export const LS_AC_CHARS = 'sl-ac-characters';
   export const LS_AC_LOCS = 'sl-ac-location';

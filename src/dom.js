@@ -18,7 +18,12 @@ export const dom = {
   lbNext: $('lbNext'),
   lbBackdrop: $('lbBackdrop'),
   lbReplace: $('lbReplace'),
-  lbDelete: $('lbDelete')
+  lbDelete: $('lbDelete'),
+  lbDescription: $('lbDescription'),
+  lbMeta: $('lbMeta'),
+  lbTiming: $('lbTiming'),
+  lbCast: $('lbCast'),
+  boardRatioSelect: $('boardRatioSelect')
 };
 
 export function customPrompt(titleText) {

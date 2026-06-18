@@ -1,13 +1,14 @@
 import { dom } from './dom.js';
 import { state } from './state.js';
 import { render, save } from './main.js';
+import { formatTime, formatOverrun } from './schedule.js';
   // ── Lightbox ───────────────────────────────────
   export function getShotLabel(shot) {
     if (!shot) return '';
     const shotNum = shot.shot != null ? shot.shot : '';
-    if (shot.num && shotNum) return `Scene ${shot.num}  /  Shot ${shotNum}`;
-    if (shot.num) return `Scene ${shot.num}`;
-    return 'Shot';
+    if (shot.num && shotNum) return `SCENE ${shot.num}  •  SHOT ${shotNum}`;
+    if (shot.num) return `SCENE ${shot.num}`;
+    return 'SHOT';
   }
 
   export function openLightbox(id) {
@@ -53,6 +54,47 @@ import { render, save } from './main.js';
     });
 
     dom.lbLabel.textContent = getShotLabel(shot);
+    
+    const metaParts = [];
+    if (shot.shotSize) metaParts.push(shot.shotSize);
+    if (shot.lens) metaParts.push(shot.lens);
+    if (shot.movement) metaParts.push(shot.movement);
+    
+    if (metaParts.length) {
+      dom.lbMeta.textContent = metaParts.join('  •  ');
+      dom.lbMeta.style.display = '';
+    } else {
+      dom.lbMeta.style.display = 'none';
+    }
+
+    const sched = state.scheduleMap[shot.id] || { callMin: -1, endMin: -1, overrunMin: 0, isInherited: false };
+    const timeParts = [];
+    if (sched.callMin >= 0) timeParts.push(`Call: ${formatTime(sched.callMin)}`);
+    if (sched.endMin >= 0) timeParts.push(`End: ${formatTime(sched.endMin)}`);
+    if (shot.duration) timeParts.push(`Dur: ${shot.duration}`);
+    if (sched.overrunMin > 0) timeParts.push(`Overrun: ${formatOverrun(sched.overrunMin)}`);
+    
+    if (timeParts.length) {
+      dom.lbTiming.textContent = timeParts.join('  •  ');
+      dom.lbTiming.style.display = '';
+    } else {
+      dom.lbTiming.style.display = 'none';
+    }
+
+    if (shot.characters) {
+      dom.lbCast.textContent = `Cast: ${shot.characters}`;
+      dom.lbCast.style.display = '';
+    } else {
+      dom.lbCast.style.display = 'none';
+    }
+    
+    dom.lbDescription.textContent = shot.notes || '';
+    if (shot.notes) {
+      dom.lbDescription.style.display = '';
+    } else {
+      dom.lbDescription.style.display = 'none';
+    }
+    
     dom.lbPrev.classList.toggle('disabled', state.lbIndex === 0);
     dom.lbNext.classList.toggle('disabled', state.lbIndex === state.lbShotIds.length - 1);
     state.currentStoryboardId = id; // keep in sync for Replace
