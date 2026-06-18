@@ -43,7 +43,7 @@ export function clearSelection() {
   // Presets: proportional scale factors (M = 1.0 baseline).
   // Actual px values are computed live from the container height.
   export const PRESETS = {
-    S:  { scale: 0.55 },
+    S:  { scale: 0.72 },
     M:  { scale: 1.0  },
     L:  { scale: 1.55 },
     XL: { scale: 2.3  },
@@ -51,14 +51,14 @@ export function clearSelection() {
 
 
   export const SCENE_COLORS = [
-    '#cbc4ef', '#efc4c4', '#efd4c4', '#efebc4',
-    '#c4efce', '#c4dfef', '#c0f0e8', '#d6d6d6',
-    '#efc4e9', '#efe3c4', '#cec4ef', '#c4efdd'
+    'var(--scene-color-0)', 'var(--scene-color-1)', 'var(--scene-color-2)', 'var(--scene-color-3)',
+    'var(--scene-color-4)', 'var(--scene-color-5)', 'var(--scene-color-6)', 'var(--scene-color-7)',
+    'var(--scene-color-8)', 'var(--scene-color-9)', 'var(--scene-color-10)', 'var(--scene-color-11)'
   ];
   export const SCENE_BGS = [
-    'rgba(203, 196, 239, 0.12)', 'rgba(239, 196, 196, 0.12)', 'rgba(239, 212, 196, 0.12)', 'rgba(239, 235, 196, 0.12)',
-    'rgba(196, 239, 206, 0.12)', 'rgba(196, 223, 239, 0.12)', 'rgba(192, 240, 232, 0.12)', 'rgba(214, 214, 214, 0.12)',
-    'rgba(239, 196, 233, 0.12)', 'rgba(239, 227, 196, 0.12)', 'rgba(206, 196, 239, 0.12)', 'rgba(196, 239, 221, 0.12)'
+    'var(--scene-bg-0)', 'var(--scene-bg-1)', 'var(--scene-bg-2)', 'var(--scene-bg-3)',
+    'var(--scene-bg-4)', 'var(--scene-bg-5)', 'var(--scene-bg-6)', 'var(--scene-bg-7)',
+    'var(--scene-bg-8)', 'var(--scene-bg-9)', 'var(--scene-bg-10)', 'var(--scene-bg-11)'
   ];
 
   export function getSceneGroup(numStr) {
@@ -75,7 +75,7 @@ export function clearSelection() {
   
   
    // 'list' | 'card'
-  export const GROUP_MODES = ['none', 'location', 'movement', 'scene'];
+  export const GROUP_MODES = ['none', 'location', 'movement', 'scene', 'characters', 'shotSize'];
   
   
   

@@ -470,7 +470,9 @@ import { getProject, putProject, deleteProject } from './db.js';
         'none': 'Group',
         'scene': 'Group: Scene',
         'location': 'Group: Loc',
-        'movement': 'Group: Move'
+        'movement': 'Group: Move',
+        'characters': 'Group: Cast',
+        'shotSize': 'Group: Size'
       };
       $('btnDropGroup').textContent = `⊞ ${labelMap[state.currentGroupMode] || 'Group'} ▾`;
       render();
@@ -522,7 +524,7 @@ import { getProject, putProject, deleteProject } from './db.js';
     render();
   });
 
-  $('btnViewToggle').addEventListener('click', () => {
+  $('btnCustomEntries').addEventListener('click', () => {
     renderSettings();
     dom.settingsView.showModal();
   });
@@ -544,7 +546,7 @@ import { getProject, putProject, deleteProject } from './db.js';
     });
   }
   initDropdown('dropGroup');
-  initDropdown('dropFile');
+  initDropdown('dropSettings');
   // click anywhere outside closes all dropdowns
   document.addEventListener('click', () => {
     document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));

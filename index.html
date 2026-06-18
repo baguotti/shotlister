@@ -46,7 +46,9 @@
 
     <!-- Toolbar -->
     <div class="toolbar" id="toolbar">
-      <button class="btn" id="btnHome" style="margin-right:12px;">← Home</button>
+      <button class="btn" id="btnHome" title="Home" style="margin-right:12px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: block;"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      </button>
       <span class="project-title" id="projectTitle" contenteditable="true" spellcheck="false" role="heading" aria-level="1"></span>
       <div class="spacer"></div>
     <button class="btn" id="btnSyncSettingsEditor" style="display:flex; align-items:center; gap:6px; margin-right:8px; font-size:11px;">☁️ <span id="syncStatusTextEditor">Offline</span></button>
@@ -64,18 +66,36 @@
         <button class="btn" data-group="scene">By Scene</button>
         <button class="btn" data-group="location">By Location</button>
         <button class="btn" data-group="movement">By Movement</button>
+        <button class="btn" data-group="characters">By Cast</button>
+        <button class="btn" data-group="shotSize">By Shot Size</button>
       </div>
     </div>
-    <button class="btn" id="btnViewToggle" title="Custom Columns">⚙️</button>
-    <button class="btn" id="btnThemeToggle" title="Theme">◐</button>
-    <div class="dropdown" id="dropFile">
-      <button class="btn dropdown-toggle" id="btnDropFile">File ▾</button>
+    <div class="dropdown" id="dropSettings">
+      <button class="btn dropdown-toggle" id="btnSettingsToggle" title="Settings">
+        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: block;"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
       <div class="dropdown-content">
-        <button class="btn" id="btnImport">↑ Import</button>
-        <button class="btn" id="btnExport">↓ Export</button>
-        <button class="btn" id="btnPrint">⎙ Print</button>
+        <button class="btn" id="btnCustomEntries" style="border: none; background: transparent; width: 100%; justify-content: flex-start; padding: 6px 12px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; display: block;"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="2" y1="14" x2="6" y2="14"/><line x1="10" y1="8" x2="14" y2="8"/><line x1="18" y1="16" x2="22" y2="16"/></svg>
+          Custom Entries
+        </button>
+        <button class="btn" id="btnImport" style="border: none; background: transparent; width: 100%; justify-content: flex-start; padding: 6px 12px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; display: block;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Import
+        </button>
+        <button class="btn" id="btnExport" style="border: none; background: transparent; width: 100%; justify-content: flex-start; padding: 6px 12px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; display: block;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export
+        </button>
+        <button class="btn" id="btnPrint" style="border: none; background: transparent; width: 100%; justify-content: flex-start; padding: 6px 12px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; display: block;"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          Print
+        </button>
       </div>
     </div>
+    <button class="btn" id="btnThemeToggle" title="Theme">
+      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: block;"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 0 0 20z" fill="currentColor"/></svg>
+    </button>
     <input type="file" id="importInput" accept=".json" style="display:none;">
   </div>
 
@@ -124,7 +144,7 @@
           </th>
           <th class="col-num">SCENE</th>
           <th class="col-shotnum">SHOT</th>
-          <th class="col-priority">Priority</th>
+          <th class="col-priority">P</th>
           <th class="col-location">Location</th>
           <th class="col-desc">Description</th>
           <th class="col-notes">Notes</th>

@@ -3,10 +3,7 @@ const puppeteer = require('puppeteer');
 (async () => {
   const browser = await puppeteer.launch({ headless: 'new' });
   const page = await browser.newPage();
-  await page.goto('http://localhost:5173');
-  
-  await page.waitForSelector('#btnNewProject');
-  await page.click('#btnNewProject');
+  await page.goto('http://localhost:5174');
   
   await page.waitForSelector('#shotBody tr');
   

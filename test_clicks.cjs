@@ -28,8 +28,8 @@ const puppeteer = require('puppeteer');
     await page.click('#btnGroupMode');
     await new Promise(r => setTimeout(r, 500));
 
-    console.log('Clicking btnViewToggle...');
-    await page.click('#btnViewToggle');
+    console.log('Clicking btnSettingsToggle...');
+    await page.click('#btnSettingsToggle');
     await new Promise(r => setTimeout(r, 500));
     
     console.log('Successfully clicked buttons. Capturing screenshot.');
