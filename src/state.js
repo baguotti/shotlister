@@ -7,7 +7,8 @@ export const state = {
   selectedIds: new Set(),
   currentPreset: 'M', boardRatio: 'auto', acSets: { characters: new Set(), location: new Set(), props: new Set(), shotSize: new Set(), lens: new Set(), movement: new Set() },
   scheduleMap: {}, groupTotals: {},
-  gridVisibility: { header: true, location: true, schedule: true, description: true, castProps: true, tech: true }
+  gridVisibility: { header: true, location: true, schedule: true, description: true, castProps: true, tech: true },
+  syncPasscode: null, syncStatus: 'offline' // 'offline' | 'syncing' | 'synced' | 'error'
 };
 
 export function clearSelection() {
@@ -27,6 +28,7 @@ export function clearSelection() {
   export const LS_PRESET_KEY = 'sl-preset';
   export const LS_RATIO_KEY = 'sl-ratio';
   export const LS_GRID_VIS_KEY = 'sl-grid-vis';
+  export const LS_SYNC_CODE_KEY = 'sl-sync-code';
   
   export const LS_AC_CHARS = 'sl-ac-characters';
   export const LS_AC_LOCS = 'sl-ac-location';

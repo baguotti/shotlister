@@ -15,12 +15,14 @@
   },
   "keywords": [],
   "author": "",
-
   "bugs": {
     "url": "https://github.com/baguotti/shotlister/issues"
   },
   "homepage": "https://github.com/baguotti/shotlister#readme",
   "devDependencies": {
     "vite": "^8.0.16"
+  },
+  "dependencies": {
+    "@upstash/redis": "^1.38.0"
   }
 }

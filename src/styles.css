@@ -1295,6 +1295,16 @@ input[type="file"].sr-only {
 .custom-modal .modal-actions .btn.primary:hover {
   filter: brightness(1.1);
 }
+.custom-modal .modal-actions .btn.danger {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+}
+.custom-modal .modal-actions .btn.danger:hover {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: #fff;
+}
 
 /* ── Grid View ─────────────────────────────────── */
 :root {

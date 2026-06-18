@@ -34,7 +34,18 @@ export const dom = {
   lbMeta: $('lbMeta'),
   lbTiming: $('lbTiming'),
   lbCast: $('lbCast'),
-  boardRatioSelect: $('boardRatioSelect')
+  boardRatioSelect: $('boardRatioSelect'),
+  
+  // Sync UI
+  btnSyncSettingsHome: $('btnSyncSettingsHome'),
+  syncStatusTextHome: $('syncStatusTextHome'),
+  btnSyncSettingsEditor: $('btnSyncSettingsEditor'),
+  syncStatusTextEditor: $('syncStatusTextEditor'),
+  syncModal: $('syncModal'),
+  syncPasscodeInput: $('syncPasscodeInput'),
+  syncCancel: $('syncCancel'),
+  syncDisconnect: $('syncDisconnect'),
+  syncSubmit: $('syncSubmit')
 };
 
 export function customPrompt(titleText) {
