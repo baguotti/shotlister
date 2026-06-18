@@ -31,7 +31,13 @@
         <div class="home-actions">
           <button class="btn btn-sync" id="btnSyncSettingsHome" aria-label="Cloud Sync Settings">☁️ <span id="syncStatusTextHome" class="hide-mobile">Offline Mode</span></button>
           <button class="btn btn-import" id="btnImportHome">↓ Import Project</button>
-          <button class="btn btn-primary" id="btnNewProject">+ New Project</button>
+          <div class="dropdown" id="dropNewProject">
+            <button class="btn btn-primary dropdown-toggle" id="btnNewProject">+ New Project ▾</button>
+            <div class="dropdown-content">
+              <button class="btn" id="btnNewBlank" style="border: none; background: transparent; width: 100%; justify-content: flex-start; padding: 6px 12px;">Blank</button>
+              <button class="btn" id="btnNewTemplate" style="border: none; background: transparent; width: 100%; justify-content: flex-start; padding: 6px 12px;">Template</button>
+            </div>
+          </div>
           <input type="file" id="importHomeInput" accept=".json" style="display:none;">
         </div>
       </div>

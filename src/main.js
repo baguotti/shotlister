@@ -278,7 +278,16 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
   });
 
 
-  $('btnNewProject').addEventListener('click', async () => {
+  $('btnNewBlank').addEventListener('click', async () => {
+    const pid = uid();
+    state.projectsList.unshift({ id: pid, title: 'Untitled Project', updatedAt: Date.now(), count: 0 });
+    saveProjects();
+    await loadProject(pid);
+    dom.projectTitle.textContent = 'Untitled Project';
+    save();
+  });
+
+  $('btnNewTemplate').addEventListener('click', async () => {
     const pid = uid();
     state.projectsList.unshift({ id: pid, title: 'Untitled Project', updatedAt: Date.now(), count: 0 });
     saveProjects();
@@ -346,6 +355,93 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
           renderHome();
         } catch(err) {
           console.error('Duplicate failed:', err);
+        }
+      }
+      return;
+    }
+    const expBtn = e.target.closest('.pc-exp');
+    if (expBtn) {
+      e.stopPropagation();
+      const idToExp = expBtn.dataset.exp;
+      const pToExp = state.projectsList.find(p => p.id === idToExp);
+      if (pToExp) {
+        try {
+          let oldShots = [];
+          if (idToExp === state.currentProjectId) {
+            oldShots = [...state.shots];
+          } else {
+            const fromDb = await getProject(idToExp);
+            if (Array.isArray(fromDb)) {
+              oldShots = fromDb;
+            } else {
+              const raw = localStorage.getItem('sl-project-' + idToExp);
+              if (raw) oldShots = JSON.parse(raw);
+            }
+          }
+
+          // Build local acSets from the shots
+          const localAcSets = { characters: [], location: [], props: [], shotSize: [], lens: [], movement: [] };
+          const charsSet = new Set();
+          const locsSet = new Set();
+          const propsSet = new Set();
+          const sizeSet = new Set();
+          const lensSet = new Set();
+          const moveSet = new Set();
+
+          const SHOT_SIZES = ['ECU','CU','MCU','MS','WIDE','EWS'];
+          const LENS_OPTIONS = ['18mm','24mm','35mm','50mm','85mm'];
+          const MOVEMENT_TYPES = ['STATIC','HANDHELD','DOLLY','CRANE','DRONE'];
+
+          oldShots.forEach(s => {
+            if (s.location) {
+              const val = s.location.trim();
+              if (val) locsSet.add(val);
+            }
+            if (s.characters) {
+              s.characters.split(',').forEach(part => {
+                const val = part.trim();
+                if (val) charsSet.add(val);
+              });
+            }
+            if (s.props) {
+              s.props.split(',').forEach(part => {
+                const val = part.trim();
+                if (val) propsSet.add(val);
+              });
+            }
+            if (s.shotSize && !SHOT_SIZES.includes(s.shotSize)) {
+              sizeSet.add(s.shotSize);
+            }
+            if (s.lens && !LENS_OPTIONS.includes(s.lens)) {
+              lensSet.add(s.lens);
+            }
+            if (s.movement && !MOVEMENT_TYPES.includes(s.movement)) {
+              moveSet.add(s.movement);
+            }
+          });
+
+          localAcSets.characters = Array.from(charsSet);
+          localAcSets.location = Array.from(locsSet);
+          localAcSets.props = Array.from(propsSet);
+          localAcSets.shotSize = Array.from(sizeSet);
+          localAcSets.lens = Array.from(lensSet);
+          localAcSets.movement = Array.from(moveSet);
+
+          const data = {
+            title: pToExp.title || 'shotlist',
+            shots: oldShots,
+            acSets: localAcSets
+          };
+
+          const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = data.title + '.json';
+          a.click();
+          URL.revokeObjectURL(url);
+        } catch(err) {
+          console.error('Export failed:', err);
         }
       }
       return;
@@ -434,6 +530,7 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
       drop.classList.remove('open');
     });
   }
+  initDropdown('dropNewProject');
   initDropdown('dropGroup');
   initDropdown('dropSettings');
   // click anywhere outside closes all dropdowns
@@ -674,6 +771,7 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
         <div class="pc-title">${esc(p.title || 'Untitled')}</div>
         <div class="pc-meta">${p.count} items · Last edited: ${new Date(p.updatedAt).toLocaleDateString()} ${new Date(p.updatedAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</div>
         <button class="pc-dup" data-dup="${p.id}" title="Duplicate project"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: block;"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></button>
+        <button class="pc-exp" data-exp="${p.id}" title="Export project"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: block;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
         <button class="pc-del" data-del="${p.id}" title="Delete project"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: block;"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg></button>
       </div>
     `).join('');

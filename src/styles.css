@@ -970,13 +970,14 @@ input[type="file"].sr-only {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  padding-right: 24px;
+  padding-right: 80px;
 }
 .project-card .pc-meta {
   font-size: 10px;
   color: var(--text-2);
 }
 .project-card .pc-dup,
+.project-card .pc-exp,
 .project-card .pc-del {
   position: absolute;
   top: 8px;
@@ -990,10 +991,13 @@ input[type="file"].sr-only {
   transition: opacity .15s, background .15s, color .15s;
 }
 .project-card .pc-del { right: 8px; }
-.project-card .pc-dup { right: 32px; }
+.project-card .pc-exp { right: 32px; }
+.project-card .pc-dup { right: 56px; }
 .project-card:hover .pc-dup,
+.project-card:hover .pc-exp,
 .project-card:hover .pc-del { opacity: 1; }
 .project-card .pc-del:hover { background: var(--bg-3); color: var(--red); }
+.project-card .pc-exp:hover { background: var(--bg-3); color: var(--text-0); }
 .project-card .pc-dup:hover { background: var(--bg-3); color: var(--text-0); }
 
 /* ── Autocomplete Dropdown ──────────────────────── */
