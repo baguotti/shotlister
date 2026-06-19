@@ -388,7 +388,7 @@ table {
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
-  min-width: 1400px;
+  min-width: 1000px;
 }
 
 thead {
@@ -418,19 +418,19 @@ thead th {
 .col-storyboard { width: 68px; transition: width 0.15s; }
 .col-num, .col-shotnum { width: 40px; }
 .col-priority { width: 40px; }
-.col-location { width: 100px; }
+.col-location { width: 90px; }
 .col-desc { width: auto; min-width: 120px; }
-.col-notes { width: auto; min-width: 120px; }
-.col-chars { width: 110px; }
-.col-shotsize { width: 100px; }
-.col-lens { width: 80px; }
-.col-movement { width: 100px; }
-.col-props { width: 100px; }
-.col-duration { width: 60px; }
-.col-calltime { width: 75px; }
-.col-endtime { width: 60px; }
-.col-overrun { width: 60px; }
-.col-running { width: 60px; }
+.col-notes { width: auto; min-width: 100px; }
+.col-chars { width: 90px; }
+.col-shotsize { width: 80px; }
+.col-lens { width: 65px; }
+.col-movement { width: 85px; }
+.col-props { width: 85px; }
+.col-duration { width: 50px; }
+.col-calltime { width: 70px; }
+.col-endtime { width: 50px; }
+.col-overrun { width: 50px; }
+.col-running { width: 55px; }
 .col-actions { width: 30px; }
 
 tbody tr {
@@ -620,6 +620,8 @@ td select {
   cursor: pointer;
   appearance: none;
   -webkit-appearance: none;
+  text-align: center;
+  text-align-last: center;
 }
 td select:hover { border-color: var(--border); }
 td select:focus { border-color: var(--accent); background: var(--bg-3); }
@@ -1474,7 +1476,7 @@ input[type="file"].sr-only {
 
 /* Selection UI */
 .col-select {
-  width: 40px;
+  width: 24px;
   text-align: center;
 }
 
@@ -1527,11 +1529,7 @@ input[type="file"].sr-only {
   outline: none;
   border-color: var(--accent);
 }
-.custom-modal .modal-actions {
-  display: flex;
-  justify-content: space-between;
-  width: 100%;
-}
+
 .custom-modal .modal-actions .btn {
   padding: 8px 16px;
   background: var(--bg-2);

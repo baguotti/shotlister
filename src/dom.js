@@ -82,5 +82,7 @@ export function customPrompt(titleText) {
     input.addEventListener('keydown', onKey);
 
     dialog.showModal();
+    // Use requestAnimationFrame or setTimeout to ensure it focuses after rendering
+    setTimeout(() => input.focus(), 10);
   });
 }

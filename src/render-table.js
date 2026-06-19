@@ -205,12 +205,12 @@ import { syncRequest } from './sync.js';
     }
   }
 
-  // Build select options: base list + custom persisted values + "Custom…" sentinel
   export function buildSelectOpts(baseOpts, acSet, currentVal) {
     const customOpts = [...acSet].filter(v => !baseOpts.includes(v)).sort();
     const allOpts = [...baseOpts, ...customOpts];
+    const effectiveVal = currentVal || allOpts[0];
     return allOpts.map(t =>
-      `<option value="${t}"${currentVal === t ? ' selected' : ''}>${t}</option>`
+      `<option value="${t}"${effectiveVal === t ? ' selected' : ''}>${t}</option>`
     ).join('') + `<option value="__custom__">Custom\u2026</option>`;
   }
 
@@ -402,8 +402,20 @@ import { syncRequest } from './sync.js';
           if (customVal && customVal.trim()) {
             const trimmed = customVal.trim();
             if (state.acSets[field]) { state.acSets[field].add(trimmed); saveAutocomplete(); }
+            
+            // Instant visual feedback
+            const opt = document.createElement('option');
+            opt.value = trimmed;
+            opt.textContent = trimmed;
+            target.insertBefore(opt, target.lastElementChild);
+            target.value = trimmed;
+            if (target.nextElementSibling && target.nextElementSibling.classList.contains('print-only')) {
+              target.nextElementSibling.textContent = trimmed;
+            }
+
             applyBulkEdit(shot.id, field, trimmed);
-            save(); softRender();
+            save(); 
+            requestAnimationFrame(() => softRender());
           } else {
             target.value = shot[field] || '';
           }
