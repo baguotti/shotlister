@@ -12,7 +12,7 @@ import { getProject, putProject, deleteProject, putImage } from './db.js';
 import { initDrag, initTouchDrag, reorderShots } from './drag-drop.js';
 import { initBulkActions, updateSelectionUI } from './bulk-actions.js';
 import { initSyncListeners, initSyncAndLoad } from './sync.js';
-import { save, saveProjects, syncRequest } from './storage.js';
+import { save, saveProjects, syncRequest, migrateLegacyData } from './storage.js';
 import { onRender, render } from './events.js';
 
   // ── Title Auto-Resize ──────────────────────────
@@ -713,7 +713,9 @@ import { onRender, render } from './events.js';
       createShot({ num: '3', shot: '2', priority: 'low', location: 'Cafe', characters: 'Alice', description: 'Tight close up on Alice looking anxious', props: '', duration: '0:07', shotSize: 'CU', lens: '50mm', movement: 'STATIC' })
     ]);
     dom.projectTitle.textContent = 'Untitled Project';
+    state.scheduleDirty = true;
     save();
+    render();
   }
 
   // ── Render Orchestrator ────────────────────────

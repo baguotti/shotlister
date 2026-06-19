@@ -1,6 +1,27 @@
 import { dom } from './dom.js';
-import { state, LS_PROJECTS_KEY } from './state.js';
+import { state, LS_PROJECTS_KEY, LS_KEY, LS_TITLE_KEY, uid } from './state.js';
 import { putProject } from './db.js';
+
+export function migrateLegacyData() {
+  try {
+    const p = localStorage.getItem(LS_PROJECTS_KEY);
+    if (p) state.projectsList = JSON.parse(p);
+  } catch(e) {}
+  
+  const raw = localStorage.getItem(LS_KEY);
+  if (raw && state.projectsList.length === 0) {
+    const oldTitle = localStorage.getItem(LS_TITLE_KEY) || 'Legacy Project';
+    const pid = uid();
+    localStorage.setItem('sl-project-' + pid, raw);
+    let legacyShots = [];
+    try { legacyShots = JSON.parse(raw); } catch(e){}
+    state.projectsList.push({ id: pid, title: oldTitle, updatedAt: Date.now(), count: legacyShots.length });
+    saveProjects();
+    localStorage.removeItem(LS_KEY);
+    localStorage.removeItem(LS_TITLE_KEY);
+  }
+}
+
 
 let saveTimeout = null;
 
