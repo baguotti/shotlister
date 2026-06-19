@@ -57,8 +57,6 @@ export function clearSelection() {
   export const LS_AC_LENS = 'sl-ac-lens';
   export const LS_AC_MOVEMENT = 'sl-ac-movement';
   
-  const TOTAL_COLS = 18;
-
   // Presets: proportional scale factors (M = 1.0 baseline).
   // Actual px values are computed live from the container height.
   export const PRESETS = {
@@ -89,26 +87,19 @@ export function clearSelection() {
     return { numStr: match[1], border: SCENE_COLORS[idx], bg: SCENE_BGS[idx] };
   }
 
-  // ── State ──────────────────────────────────────
-  
-  
-  
-   // 'list' | 'card'
+  export function getNextShotNumber(sceneNum, shots) {
+    if (!sceneNum) return '1';
+    const shotsInScene = shots.filter(s => s.kind === 'shot' && s.num === sceneNum);
+    if (shotsInScene.length === 0) return '1';
+    let maxVal = 0;
+    shotsInScene.forEach(s => {
+      const val = parseInt(s.shot, 10);
+      if (!isNaN(val) && val > maxVal) maxVal = val;
+    });
+    return String(maxVal + 1);
+  }
+
   export const GROUP_MODES = ['none', 'location', 'movement', 'scene', 'characters', 'shotSize'];
-  
-  
-  
-  
-     // state.shots with images, in current rendered order
-     // current index in state.lbShotIds
-
-   // active preset key
-
-  
-  // Computed schedule — populated by cascadeSchedule()
-  // Map of shot id → { callMin, endMin, overrunMin, isInherited }
-  
-  
 
   // ── Helpers ────────────────────────────────────
   export function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }

@@ -30,35 +30,49 @@ import { render, save } from './main.js';
     } catch(e) {}
   }
 
-  export function extractAutocompleteFromShots() {
-    let changed = false;
-    state.shots.forEach(s => {
+  export function buildAutocompleteSets(shots) {
+    const sets = { characters: new Set(), location: new Set(), props: new Set(), shotSize: new Set(), lens: new Set(), movement: new Set() };
+    shots.forEach(s => {
       if (s.location) {
         const val = s.location.trim();
-        if (val && !state.acSets.location.has(val)) { state.acSets.location.add(val); changed = true; }
+        if (val) sets.location.add(val);
       }
       if (s.characters) {
         s.characters.split(',').forEach(part => {
           const val = part.trim();
-          if (val && !state.acSets.characters.has(val)) { state.acSets.characters.add(val); changed = true; }
+          if (val) sets.characters.add(val);
         });
       }
       if (s.props) {
         s.props.split(',').forEach(part => {
           const val = part.trim();
-          if (val && !state.acSets.props.has(val)) { state.acSets.props.add(val); changed = true; }
+          if (val) sets.props.add(val);
         });
       }
       if (s.shotSize && !SHOT_SIZES.includes(s.shotSize)) {
-        if (!state.acSets.shotSize.has(s.shotSize)) { state.acSets.shotSize.add(s.shotSize); changed = true; }
+        sets.shotSize.add(s.shotSize);
       }
       if (s.lens && !LENS_OPTIONS.includes(s.lens)) {
-        if (!state.acSets.lens.has(s.lens)) { state.acSets.lens.add(s.lens); changed = true; }
+        sets.lens.add(s.lens);
       }
       if (s.movement && !MOVEMENT_TYPES.includes(s.movement)) {
-        if (!state.acSets.movement.has(s.movement)) { state.acSets.movement.add(s.movement); changed = true; }
+        sets.movement.add(s.movement);
       }
     });
+    return sets;
+  }
+
+  export function extractAutocompleteFromShots() {
+    let changed = false;
+    const newSets = buildAutocompleteSets(state.shots);
+    for (const key of Object.keys(newSets)) {
+      newSets[key].forEach(val => {
+        if (!state.acSets[key].has(val)) {
+          state.acSets[key].add(val);
+          changed = true;
+        }
+      });
+    }
     if (changed) saveAutocomplete();
   }
 

@@ -3,4 +3,6 @@ dist/
 _old/
 .DS_Store
 *.log
+*.cjs
 test_clicks.png
+project_export.json

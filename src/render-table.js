@@ -1,15 +1,15 @@
 import { dom, $, customPrompt } from './dom.js';
-import { state, getSceneGroup, createShot, createBlock, PRIORITY_CYCLE, MOVEMENT_TYPES, SHOT_SIZES, LENS_OPTIONS, uid, setCurrentStoryboardId, setContextRowId, setShots } from './state.js';
+import { state, getSceneGroup, createShot, createBlock, PRIORITY_CYCLE, MOVEMENT_TYPES, SHOT_SIZES, LENS_OPTIONS, uid, setCurrentStoryboardId, setContextRowId, setShots, getNextShotNumber } from './state.js';
 import { parseDuration, formatDuration, formatTime, formatOverrun, isValidDuration, isValidTime, normalizeDuration, normalizeTime, cascadeSchedule } from './schedule.js';
 import { openLightbox } from './lightbox.js';
 import { showAutocomplete, hideAutocomplete, handleAutocompleteKey, filterAutocomplete, isAutocompleteActiveFor, scheduleAutocompleteHide, cancelAutocompleteHide, saveAutocomplete } from './autocomplete.js';
-import { render, save, getFilteredShots, updateStats, esc, applyPresetLayout } from './main.js';
+import { render, save, updateStats, esc, applyPresetLayout } from './main.js';
 import { initDrag, initTouchDrag } from './drag-drop.js';
 import { applyBulkEdit, updateSelectionUI } from './bulk-actions.js';
 import { getGroupInfo } from './grouping.js';
   // ── Render: Table ──────────────────────────────
   export function renderTable() {
-    const filtered = getFilteredShots();
+    const filtered = state.shots;
     
 
     let html = '';
@@ -676,20 +676,7 @@ import { getGroupInfo } from './grouping.js';
     if (idx >= 0) {
       const src = state.shots[idx];
       const defaultNum = src ? src.num : '';
-      const shotsInScene = state.shots.filter(s => s.kind === 'shot' && s.num === defaultNum);
-      let defaultShot = '';
-      if (shotsInScene.length > 0) {
-        let maxShotVal = 0;
-        shotsInScene.forEach(s => {
-          const val = parseInt(s.shot, 10);
-          if (!isNaN(val) && val > maxShotVal) {
-            maxShotVal = val;
-          }
-        });
-        defaultShot = String(maxShotVal + 1);
-      } else {
-        defaultShot = '1';
-      }
+      const defaultShot = getNextShotNumber(defaultNum, state.shots);
       const updatedShots = [...state.shots];
       updatedShots.splice(idx, 0, createShot({ num: defaultNum, shot: defaultShot }));
       setShots(updatedShots);
@@ -703,20 +690,7 @@ import { getGroupInfo } from './grouping.js';
     if (idx >= 0) {
       const src = state.shots[idx];
       const defaultNum = src ? src.num : '';
-      const shotsInScene = state.shots.filter(s => s.kind === 'shot' && s.num === defaultNum);
-      let defaultShot = '';
-      if (shotsInScene.length > 0) {
-        let maxShotVal = 0;
-        shotsInScene.forEach(s => {
-          const val = parseInt(s.shot, 10);
-          if (!isNaN(val) && val > maxShotVal) {
-            maxShotVal = val;
-          }
-        });
-        defaultShot = String(maxShotVal + 1);
-      } else {
-        defaultShot = '1';
-      }
+      const defaultShot = getNextShotNumber(defaultNum, state.shots);
       const updatedShots = [...state.shots];
       updatedShots.splice(idx + 1, 0, createShot({ num: defaultNum, shot: defaultShot }));
       setShots(updatedShots);
@@ -732,7 +706,7 @@ import { getGroupInfo } from './grouping.js';
 
   // ── Render: Grid ───────────────────────────────
   export function renderGrid() {
-    const filtered = getFilteredShots().filter(s => s.kind !== 'block');
+    const filtered = state.shots.filter(s => s.kind !== 'block');
     let html = '';
     let cumulative = 0;
 

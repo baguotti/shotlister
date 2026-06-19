@@ -1,11 +1,15 @@
 import { Redis } from '@upstash/redis';
 
 export default async function handler(req, res) {
-  // Handle CORS options request
+  const origin = req.headers.origin;
+  const isAllowedOrigin = !origin || origin.startsWith('http://localhost') || origin.endsWith('.vercel.app') || origin.endsWith('.shotlister.app') || origin.includes('shotlister');
+  const allowedCors = isAllowedOrigin && origin ? origin : 'https://shotlister.vercel.app';
+
+  res.setHeader('Access-Control-Allow-Origin', allowedCors);
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
   if (req.method === 'OPTIONS') {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     return res.status(200).end();
   }
 
@@ -35,8 +39,13 @@ export default async function handler(req, res) {
 
   const { passcode, action, payload } = req.body || {};
 
-  if (!passcode) {
-    return res.status(400).json({ error: 'Passcode is required' });
+  // Payload size check (approximate 5MB limit, though Vercel drops at 4.5MB anyway)
+  if (JSON.stringify(req.body || {}).length > 5 * 1024 * 1024) {
+    return res.status(413).json({ error: 'Payload too large (Max 5MB)' });
+  }
+
+  if (!passcode || typeof passcode !== 'string' || passcode.length > 50) {
+    return res.status(400).json({ error: 'Invalid passcode format' });
   }
 
   try {
@@ -55,8 +64,8 @@ export default async function handler(req, res) {
 
     if (action === 'get_project') {
       const { projectId } = payload || {};
-      if (!projectId) {
-        return res.status(400).json({ error: 'projectId is required' });
+      if (!projectId || typeof projectId !== 'string' || projectId.length > 50) {
+        return res.status(400).json({ error: 'Invalid projectId' });
       }
       const data = await redis.get(`sl:user:${passcode}:project:${projectId}`);
       return res.status(200).json(data || null);
@@ -64,8 +73,8 @@ export default async function handler(req, res) {
 
     if (action === 'save_project') {
       const { projectId, shots } = payload || {};
-      if (!projectId) {
-        return res.status(400).json({ error: 'projectId is required' });
+      if (!projectId || typeof projectId !== 'string' || projectId.length > 50) {
+        return res.status(400).json({ error: 'Invalid projectId' });
       }
       await redis.set(`sl:user:${passcode}:project:${projectId}`, shots);
       return res.status(200).json({ success: true });
@@ -73,8 +82,8 @@ export default async function handler(req, res) {
 
     if (action === 'delete_project') {
       const { projectId } = payload || {};
-      if (!projectId) {
-        return res.status(400).json({ error: 'projectId is required' });
+      if (!projectId || typeof projectId !== 'string' || projectId.length > 50) {
+        return res.status(400).json({ error: 'Invalid projectId' });
       }
       await redis.del(`sl:user:${passcode}:project:${projectId}`);
       return res.status(200).json({ success: true });

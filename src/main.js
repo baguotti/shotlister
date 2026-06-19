@@ -1,10 +1,11 @@
 import { dom, $ } from './dom.js';
-import { state, PRESETS, createShot, createBlock, LS_KEY, LS_TITLE_KEY, LS_PROJECTS_KEY, LS_LAST_PROJ_KEY, LS_THEME_KEY, LS_PRESET_KEY, LS_RATIO_KEY, LS_VIEW_MODE_KEY, LS_GRID_VIS_KEY, LS_SYNC_CODE_KEY, uid, GROUP_MODES, clearSelection, setProjectsList, setCurrentProjectId, setShots, setViewMode, setCurrentGroupMode, setContextRowId, setDragSrcId, setCurrentStoryboardId, setCurrentPreset, setBoardRatio, setGridVisibility } from './state.js';
+import { ICON_DUP, ICON_EXP, ICON_DEL } from './icons.js';
+import { state, PRESETS, createShot, createBlock, LS_KEY, LS_TITLE_KEY, LS_PROJECTS_KEY, LS_LAST_PROJ_KEY, LS_THEME_KEY, LS_PRESET_KEY, LS_RATIO_KEY, LS_VIEW_MODE_KEY, LS_GRID_VIS_KEY, LS_SYNC_CODE_KEY, uid, GROUP_MODES, clearSelection, setProjectsList, setCurrentProjectId, setShots, setViewMode, setCurrentGroupMode, setContextRowId, setDragSrcId, setCurrentStoryboardId, setCurrentPreset, setBoardRatio, setGridVisibility, getNextShotNumber } from './state.js';
 import { cascadeSchedule, formatDuration, formatOverrun, parseDuration, formatTime } from './schedule.js';
 import { renderTable, renderGrid, hideContextMenu, initTableDelegation } from './render-table.js';
 import { renderSettings } from './render-settings.js';
 import { renderTimeline } from './timeline.js';
-import { loadAutocomplete, extractAutocompleteFromShots } from './autocomplete.js';
+import { loadAutocomplete, extractAutocompleteFromShots, buildAutocompleteSets } from './autocomplete.js';
 import { initPWA } from './pwa.js';
 import { getProject, putProject, deleteProject } from './db.js';
 import { initDrag, initTouchDrag, reorderShots } from './drag-drop.js';
@@ -31,9 +32,26 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
     el.style.fontSize = best + 'px';
   }
 
+  // ── Global ResizeObserver ──────────────────────
+  export const globalObserver = new ResizeObserver(entries => {
+    for (let entry of entries) {
+      if (entry.target === dom.projectTitle) {
+        if (titleRaf) cancelAnimationFrame(titleRaf);
+        titleRaf = requestAnimationFrame(fitTitleFont);
+      }
+      if (entry.target === dom.tableWrap || entry.target === dom.gridWrap) {
+        applyPresetLayout();
+      }
+    }
+  });
+
   // Observe width changes (toolbar resize)
-  new ResizeObserver(fitTitleFont).observe(dom.projectTitle);
-  dom.projectTitle.addEventListener('input', fitTitleFont);
+  globalObserver.observe(dom.projectTitle);
+  let titleRaf = null;
+  dom.projectTitle.addEventListener('input', () => {
+    if (titleRaf) cancelAnimationFrame(titleRaf);
+    titleRaf = requestAnimationFrame(fitTitleFont);
+  });
 
   // ── Responsive Preset Layout ───────────────────
   const BASE_ROW_FACTOR = 0.088; // fraction of dom.tableWrap height for M preset
@@ -171,21 +189,18 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
   }
 
   // ── Filtering ──────────────────────────────────
-  export function getFilteredShots() {
-    return state.shots;
-  }
+
 
 
   export function esc(s) {
-    const d = document.createElement('div');
-    d.textContent = s;
-    return d.innerHTML;
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
 
   // ── Stats ──────────────────────────────────────
   export function updateStats() {
-    const filtered = getFilteredShots();
+    const filtered = state.shots;
     
     const scenes = new Set();
     let shotCount = 0;
@@ -241,23 +256,8 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
   $('btnAddRow').addEventListener('click', () => {
     const lastShot = [...state.shots].reverse().find(s => s.kind === 'shot');
     let defaultNum = '1';
-    let defaultShot = '1';
-    if (lastShot) {
-      defaultNum = lastShot.num || '1';
-      const shotsInScene = state.shots.filter(s => s.kind === 'shot' && s.num === defaultNum);
-      if (shotsInScene.length > 0) {
-        let maxShotVal = 0;
-        shotsInScene.forEach(s => {
-          const val = parseInt(s.shot, 10);
-          if (!isNaN(val) && val > maxShotVal) {
-            maxShotVal = val;
-          }
-        });
-        defaultShot = String(maxShotVal + 1);
-      } else {
-        defaultShot = '1';
-      }
-    }
+    if (lastShot) defaultNum = lastShot.num || '1';
+    let defaultShot = getNextShotNumber(defaultNum, state.shots);
     state.shots.push(createShot({ num: defaultNum, shot: defaultShot }));
     save(); render();
     if (state.viewMode === 'list') {
@@ -334,18 +334,7 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
       if (pToDup) {
         try {
           const newPid = uid();
-          let oldShots = [];
-          if (idToDup === state.currentProjectId) {
-            oldShots = [...state.shots];
-          } else {
-            const fromDb = await getProject(idToDup);
-            if (Array.isArray(fromDb)) {
-              oldShots = fromDb;
-            } else {
-              const raw = localStorage.getItem('sl-project-' + idToDup);
-              if (raw) oldShots = JSON.parse(raw);
-            }
-          }
+          let oldShots = await getShotsForProject(idToDup);
           const clonedShots = oldShots.map(s => ({...s, id: uid()}));
           
           state.projectsList.unshift({ id: newPid, title: pToDup.title + ' (Copy)', updatedAt: Date.now(), count: clonedShots.length });
@@ -366,66 +355,18 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
       const pToExp = state.projectsList.find(p => p.id === idToExp);
       if (pToExp) {
         try {
-          let oldShots = [];
-          if (idToExp === state.currentProjectId) {
-            oldShots = [...state.shots];
-          } else {
-            const fromDb = await getProject(idToExp);
-            if (Array.isArray(fromDb)) {
-              oldShots = fromDb;
-            } else {
-              const raw = localStorage.getItem('sl-project-' + idToExp);
-              if (raw) oldShots = JSON.parse(raw);
-            }
-          }
+          let oldShots = await getShotsForProject(idToExp);
 
           // Build local acSets from the shots
-          const localAcSets = { characters: [], location: [], props: [], shotSize: [], lens: [], movement: [] };
-          const charsSet = new Set();
-          const locsSet = new Set();
-          const propsSet = new Set();
-          const sizeSet = new Set();
-          const lensSet = new Set();
-          const moveSet = new Set();
-
-          const SHOT_SIZES = ['ECU','CU','MCU','MS','WIDE','EWS'];
-          const LENS_OPTIONS = ['18mm','24mm','35mm','50mm','85mm'];
-          const MOVEMENT_TYPES = ['STATIC','HANDHELD','DOLLY','CRANE','DRONE'];
-
-          oldShots.forEach(s => {
-            if (s.location) {
-              const val = s.location.trim();
-              if (val) locsSet.add(val);
-            }
-            if (s.characters) {
-              s.characters.split(',').forEach(part => {
-                const val = part.trim();
-                if (val) charsSet.add(val);
-              });
-            }
-            if (s.props) {
-              s.props.split(',').forEach(part => {
-                const val = part.trim();
-                if (val) propsSet.add(val);
-              });
-            }
-            if (s.shotSize && !SHOT_SIZES.includes(s.shotSize)) {
-              sizeSet.add(s.shotSize);
-            }
-            if (s.lens && !LENS_OPTIONS.includes(s.lens)) {
-              lensSet.add(s.lens);
-            }
-            if (s.movement && !MOVEMENT_TYPES.includes(s.movement)) {
-              moveSet.add(s.movement);
-            }
-          });
-
-          localAcSets.characters = Array.from(charsSet);
-          localAcSets.location = Array.from(locsSet);
-          localAcSets.props = Array.from(propsSet);
-          localAcSets.shotSize = Array.from(sizeSet);
-          localAcSets.lens = Array.from(lensSet);
-          localAcSets.movement = Array.from(moveSet);
+          const sets = buildAutocompleteSets(oldShots);
+          const localAcSets = {
+            characters: Array.from(sets.characters),
+            location: Array.from(sets.location),
+            props: Array.from(sets.props),
+            shotSize: Array.from(sets.shotSize),
+            lens: Array.from(sets.lens),
+            movement: Array.from(sets.movement)
+          };
 
           const data = {
             title: pToExp.title || 'shotlist',
@@ -664,7 +605,13 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
     }
   }
 
-  export async function save() {
+  let saveTimeout = null;
+  export function save() {
+    clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(doSave, 500);
+  }
+
+  async function doSave() {
     if (!state.currentProjectId) return;
     try {
       await putProject(state.currentProjectId, state.shots);
@@ -681,6 +628,14 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
     } catch(e) {
       console.error('IndexedDB save failed:', e);
     }
+  }
+
+  export async function getShotsForProject(id) {
+    if (id === state.currentProjectId) return [...state.shots];
+    const fromDb = await getProject(id);
+    if (Array.isArray(fromDb)) return fromDb;
+    const raw = localStorage.getItem('sl-project-' + id);
+    return raw ? JSON.parse(raw) : [];
   }
 
   export async function loadProject(id) {
@@ -770,9 +725,9 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
       <div class="project-card" data-id="${p.id}">
         <div class="pc-title">${esc(p.title || 'Untitled')}</div>
         <div class="pc-meta">${p.count} items · Last edited: ${new Date(p.updatedAt).toLocaleDateString()} ${new Date(p.updatedAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}</div>
-        <button class="pc-dup" data-dup="${p.id}" title="Duplicate project"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: block;"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></button>
-        <button class="pc-exp" data-exp="${p.id}" title="Export project"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: block;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
-        <button class="pc-del" data-del="${p.id}" title="Delete project"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: block;"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg></button>
+        <button class="pc-dup" data-dup="${p.id}" title="Duplicate project">${ICON_DUP}</button>
+        <button class="pc-exp" data-exp="${p.id}" title="Export project">${ICON_EXP}</button>
+        <button class="pc-del" data-del="${p.id}" title="Delete project">${ICON_DEL}</button>
       </div>
     `).join('');
   }
@@ -842,5 +797,6 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
   initSyncListeners();
   initSyncAndLoad();
 
-  // ResizeObserver: reflow preset sizes whenever the table container changes size
-  new ResizeObserver(() => applyPresetLayout()).observe(dom.tableWrap);
+  // Observe table wrap to reflow preset sizes whenever the container changes size
+  globalObserver.observe(dom.tableWrap);
+  globalObserver.observe(dom.gridWrap);
