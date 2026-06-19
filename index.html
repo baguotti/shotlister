@@ -274,11 +274,15 @@
       <label for="syncPasscodeInput" style="font-family: var(--font-mono); font-size: 11px; color: var(--text-1); text-align: left;">Sync Passcode</label>
       <input type="password" id="syncPasscodeInput" placeholder="Enter private passcode..." autocomplete="off" style="width: 100%; box-sizing: border-box;">
     </div>
-    <div class="modal-actions">
-      <button id="syncCancel" class="btn">Cancel</button>
-      <button id="syncDisconnect" class="btn danger" style="display: none;">Disconnect</button>
-      <button id="syncForceImages" class="btn" style="display: none;" title="Manually push local images to the cloud">Force Image Upload</button>
-      <button id="syncSubmit" class="btn primary">Connect & Sync</button>
+    <div class="modal-actions" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+      <div style="display: flex; gap: 8px;">
+        <button id="syncCancel" class="btn">Cancel</button>
+        <button id="syncDisconnect" class="btn danger" style="display: none;">Disconnect</button>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button id="syncForceImages" class="btn" style="display: none;" title="Manually push local images to the cloud">Force Image Upload</button>
+        <button id="syncSubmit" class="btn primary">Connect & Sync</button>
+      </div>
     </div>
   </div>
 </dialog>
