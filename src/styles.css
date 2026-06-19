@@ -1531,6 +1531,7 @@ input[type="file"].sr-only {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
+  flex-wrap: wrap;
 }
 .custom-modal .modal-actions .btn {
   padding: 8px 16px;
