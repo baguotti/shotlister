@@ -1,6 +1,7 @@
 const DB_NAME = 'ShotlisterDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = 'projects';
+const IMAGES_STORE = 'images';
 
 let dbInstance = null;
 
@@ -12,6 +13,9 @@ export function openDB() {
       const db = e.target.result;
       if (!db.objectStoreNames.contains(STORE_NAME)) {
         db.createObjectStore(STORE_NAME);
+      }
+      if (!db.objectStoreNames.contains(IMAGES_STORE)) {
+        db.createObjectStore(IMAGES_STORE);
       }
     };
     req.onsuccess = () => { dbInstance = req.result; resolve(dbInstance); };
@@ -48,3 +52,24 @@ export async function deleteProject(id) {
     req.onerror = () => reject(req.error);
   });
 }
+
+export async function getImage(id) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IMAGES_STORE, 'readonly');
+    const req = tx.objectStore(IMAGES_STORE).get(id);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+export async function putImage(id, dataUrl) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IMAGES_STORE, 'readwrite');
+    const req = tx.objectStore(IMAGES_STORE).put(dataUrl, id);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
+

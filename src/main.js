@@ -8,7 +8,7 @@ import { renderSettings } from './render-settings.js';
 import { renderTimeline } from './timeline.js';
 import { loadAutocomplete, extractAutocompleteFromShots, buildAutocompleteSets } from './autocomplete.js';
 import { initPWA } from './pwa.js';
-import { getProject, putProject, deleteProject } from './db.js';
+import { getProject, putProject, deleteProject, putImage } from './db.js';
 import { initDrag, initTouchDrag, reorderShots } from './drag-drop.js';
 import { initBulkActions, updateSelectionUI } from './bulk-actions.js';
 import { initSyncListeners, initSyncAndLoad } from './sync.js';
@@ -608,6 +608,19 @@ import { onRender, render } from './events.js';
       }
       
       if (rawShots) {
+        // MIGRATION: move base64 images out of shot objects into IndexedDB
+        let imagesMigrated = false;
+        for (const s of rawShots) {
+          if (typeof s.storyboard === 'string' && s.storyboard.startsWith('data:image/')) {
+            await putImage(s.id, s.storyboard);
+            s.storyboard = true;
+            imagesMigrated = true;
+          }
+        }
+        if (imagesMigrated) {
+          await putProject(id, rawShots);
+        }
+
         setShots(rawShots);
         let sceneShotCounters = {};
         state.shots.forEach(s => {

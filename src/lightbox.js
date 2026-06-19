@@ -1,8 +1,10 @@
 import { dom } from './dom.js';
-import { state } from './state.js';
+import { state, getShot } from './state.js';
 import { render } from './events.js';
 import { save } from './storage.js';
 import { formatTime, formatOverrun } from './schedule.js';
+import { getImage } from './db.js';
+
   // ── Lightbox ───────────────────────────────────
   export function getShotLabel(shot) {
     if (!shot) return '';
@@ -40,15 +42,18 @@ import { formatTime, formatOverrun } from './schedule.js';
     state.lbIndex = -1;
   }
 
-  function lbRefresh() {
+  async function lbRefresh() {
     const id   = state.lbShotIds[state.lbIndex];
     const shot = getShot(id);
     if (!shot) return;
 
     dom.lbImg.style.opacity = '0';
+    
+    const blobOrDataUrl = await getImage(id);
+
     // Small tick so the fade-out is visible when navigating
     requestAnimationFrame(() => {
-      dom.lbImg.src = shot.storyboard;
+      if (blobOrDataUrl) dom.lbImg.src = blobOrDataUrl;
       dom.lbImg.onload = () => { dom.lbImg.style.opacity = '1'; };
       // If cached, onload may not fire; force opacity
       if (dom.lbImg.complete) dom.lbImg.style.opacity = '1';
@@ -109,7 +114,7 @@ import { formatTime, formatOverrun } from './schedule.js';
     
     dom.lbPrev.classList.toggle('disabled', state.lbIndex === 0);
     dom.lbNext.classList.toggle('disabled', state.lbIndex === state.lbShotIds.length - 1);
-    setCurrentStoryboardId(id); // keep in sync for Replace
+    state.currentStoryboardId = id; // keep in sync for Replace
   }
 
   function lbNavigate(dir) {

@@ -10,6 +10,7 @@ import { esc } from './utils.js';
 import { initDrag, initTouchDrag } from './drag-drop.js';
 import { applyBulkEdit, updateSelectionUI } from './bulk-actions.js';
 import { getGroupInfo } from './grouping.js';
+import { putImage, getImage } from './db.js';
   // ── Render: Table ──────────────────────────────
   export function renderTable() {
     const filtered = state.shots;
@@ -117,6 +118,7 @@ import { getGroupInfo } from './grouping.js';
 
     dom.shotBody.innerHTML = html;
     updateStats();
+    hydrateImages();
   }
 
   export function updateShotDOM(id, field, val) {
@@ -179,6 +181,18 @@ import { getGroupInfo } from './grouping.js';
     });
   }
 
+  export async function hydrateImages() {
+    const lazyImages = document.querySelectorAll('img[data-lazy-img]');
+    for (const img of lazyImages) {
+      if (img.dataset.hydrated) continue;
+      const id = img.dataset.lazyImg;
+      const blobOrDataUrl = await getImage(id);
+      if (blobOrDataUrl) {
+        img.src = blobOrDataUrl;
+      }
+      img.dataset.hydrated = "true";
+    }
+  }
 
   // Build select options: base list + custom persisted values + "Custom…" sentinel
   export function buildSelectOpts(baseOpts, acSet, currentVal) {
@@ -194,7 +208,7 @@ import { getGroupInfo } from './grouping.js';
     const prioDisplay = prioMap[s.priority] || '-';
 
     const storyboardContent = s.storyboard
-      ? `<div class="sb-thumb-wrap"><img src="${s.storyboard}" alt="storyboard" loading="lazy"></div>`
+      ? `<div class="sb-thumb-wrap"><img data-lazy-img="${s.id}" alt="storyboard" loading="lazy"></div>`
       : `<div class="placeholder">+</div>`;
 
     const durValid = isValidDuration(s.duration);
@@ -309,8 +323,8 @@ import { getGroupInfo } from './grouping.js';
   // ── Event Binding: Table ───────────────────────
   let lastCheckedId = null;
 
-  export function softRender() {
-    if (state.currentGroupMode !== 'none') {
+  export function softRender(forceGroupRender = false) {
+    if (state.currentGroupMode !== 'none' && forceGroupRender) {
       render();
     } else {
       refreshScheduleDOM();
@@ -389,10 +403,11 @@ import { getGroupInfo } from './grouping.js';
           applyBulkEdit(shot.id, 'blockType', target.value);
           const lbl = row.querySelector('.block-label');
           if (lbl) lbl.style.display = target.value === 'CUSTOM' ? '' : 'none';
-          save(); softRender();
+          save(); softRender(true);
         } else {
           applyBulkEdit(shot.id, field, target.value);
-          save(); softRender();
+          let force = (field === state.currentGroupMode);
+          save(); softRender(force);
         }
       }
     });
@@ -453,7 +468,8 @@ import { getGroupInfo } from './grouping.js';
               }
             }
             
-            save(); softRender(); 
+            let force = (field === state.currentGroupMode || field === 'num' || field === 'shot');
+            save(); softRender(force); 
           }
         }
       }
@@ -465,7 +481,7 @@ import { getGroupInfo } from './grouping.js';
           const normalized = normalizeDuration(target.value.trim());
           applyBulkEdit(shot.id, 'duration', normalized);
           target.value = normalized;
-          save(); softRender();
+          save(); softRender(true);
         }
       }
 
@@ -492,7 +508,7 @@ import { getGroupInfo } from './grouping.js';
             target.value = normalized;
             target.classList.remove('invalid');
           }
-          save(); softRender();
+          save(); softRender(true);
         }
       }
     });
@@ -623,13 +639,15 @@ import { getGroupInfo } from './grouping.js';
 
         const shot = getShot(state.currentStoryboardId);
         if (shot) {
-          shot.storyboard = dataUrl;
-          save();
-          render();
-          // If dom.lightbox is open (Replace flow), refresh it
-          if (dom.lightbox.classList.contains('lb-visible')) {
-            openLightbox(state.currentStoryboardId);
-          }
+          putImage(shot.id, dataUrl).then(() => {
+            shot.storyboard = true;
+            save();
+            render();
+            // If dom.lightbox is open (Replace flow), refresh it
+            if (dom.lightbox.classList.contains('lb-visible')) {
+              openLightbox(state.currentStoryboardId);
+            }
+          });
         }
       };
       img.src = ev.target.result;
@@ -741,6 +759,7 @@ import { getGroupInfo } from './grouping.js';
     }
 
     dom.gridWrap.innerHTML = html;
+    hydrateImages();
   }
 
   function buildGridCard(s, runTime) {
@@ -760,7 +779,7 @@ import { getGroupInfo } from './grouping.js';
 
     let storyboardContent = '';
     if (s.storyboard) {
-      storyboardContent = `<img src="${s.storyboard}" alt="Storyboard">`;
+      storyboardContent = `<img data-lazy-img="${s.id}" alt="Storyboard">`;
     } else {
       storyboardContent = `<div class="gc-board-placeholder" style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;">Upload Board</div>`;
     }
