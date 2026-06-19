@@ -11,8 +11,8 @@ import { initPWA } from './pwa.js';
 import { getProject, putProject, deleteProject, putImage } from './db.js';
 import { initDrag, initTouchDrag, reorderShots } from './drag-drop.js';
 import { initBulkActions, updateSelectionUI } from './bulk-actions.js';
-import { initSyncListeners, initSyncAndLoad } from './sync.js';
-import { save, saveProjects, syncRequest, migrateLegacyData } from './storage.js';
+import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
+import { save, saveProjects, migrateLegacyData } from './storage.js';
 import { onRender, render } from './events.js';
 
   // ── Title Auto-Resize ──────────────────────────

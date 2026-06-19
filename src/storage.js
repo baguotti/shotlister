@@ -1,6 +1,7 @@
 import { dom } from './dom.js';
 import { state, LS_PROJECTS_KEY, LS_KEY, LS_TITLE_KEY, uid } from './state.js';
 import { putProject } from './db.js';
+import { syncRequest } from './sync.js';
 
 export function migrateLegacyData() {
   try {
@@ -56,33 +57,4 @@ export async function doSave() {
   } catch(e) {
     console.error('IndexedDB save failed:', e);
   }
-}
-
-export function syncRequest(action, payload) {
-  if (!state.syncPasscode) return Promise.resolve(null);
-  state.syncStatus = 'syncing';
-  const st = document.getElementById('syncStatus');
-  if (st) st.className = 'sync-status syncing';
-
-  return fetch('/api/sync', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action, passcode: state.syncPasscode, payload })
-  }).then(r => r.json()).then(data => {
-    if (data.error) throw new Error(data.error);
-    state.syncStatus = 'synced';
-    if (st) st.className = 'sync-status synced';
-    setTimeout(() => {
-      if (state.syncStatus === 'synced') {
-        state.syncStatus = 'offline';
-        if (st) st.className = 'sync-status offline';
-      }
-    }, 2000);
-    return data.data;
-  }).catch(err => {
-    console.error('Sync failed:', err);
-    state.syncStatus = 'error';
-    if (st) st.className = 'sync-status error';
-    return null;
-  });
 }
