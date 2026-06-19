@@ -25,9 +25,9 @@ export function clearSelection() {
 }
 
   // ── Constants ──────────────────────────────────
-  export const MOVEMENT_TYPES = ['STATIC','HANDHELD','DOLLY','CRANE','DRONE'];
-  export const SHOT_SIZES = ['ECU','CU','MCU','MS','WIDE','EWS'];
-  export const LENS_OPTIONS = ['18mm','24mm','35mm','50mm','85mm'];
+  export const MOVEMENT_TYPES = ['-','STATIC','HANDHELD','DOLLY','CRANE','DRONE'];
+  export const SHOT_SIZES = ['-','ECU','CU','MCU','MS','WIDE','EWS'];
+  export const LENS_OPTIONS = ['-','18mm','24mm','35mm','50mm','85mm'];
   export const PRIORITY_CYCLE = ['off','low','medium','high'];
   export const LS_KEY = 'sl-data';
   export const LS_TITLE_KEY = 'sl-title';
@@ -102,7 +102,7 @@ export function clearSelection() {
       shot: '',
       priority: 'off',
       storyboard: '',
-      movement: 'STATIC',
+      movement: '',
       shotSize: '',
       lens: '',
       characters: '',

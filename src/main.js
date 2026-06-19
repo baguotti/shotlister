@@ -630,7 +630,7 @@ import { onRender, render } from './events.js';
           if (s.callTime === undefined) s.callTime = '';
           // Migrate legacy shotType → movement
           if (s.movement === undefined) {
-            s.movement = s.shotType ? s.shotType.toUpperCase() : 'STATIC';
+            s.movement = s.shotType ? s.shotType.toUpperCase() : '';
           }
           delete s.shotType;
           if (s.shotSize === undefined) s.shotSize = '';
@@ -699,21 +699,21 @@ import { onRender, render } from './events.js';
     setShots([
       createBlock({ blockType: 'CUSTOM', label: 'CREW CALL / SETUP', duration: '', callTime: '09:00' }),
       // Scene 1: Cafe - Alice & Bob
-      createShot({ num: '1', shot: '1', priority: 'medium', location: 'Cafe', characters: 'Alice, Bob', description: 'Wide master shot of Alice and Bob discussing the mystery map', props: 'Old map, coffee cups', duration: '0:15', shotSize: 'WIDE', movement: 'STATIC' }),
-      createShot({ num: '1', shot: '2', priority: 'low', location: 'Cafe', characters: 'Alice', description: 'Close up on Alice as she reveals the secret location', props: 'Old map', duration: '0:10', shotSize: 'CU', lens: '50mm', movement: 'STATIC' }),
-      createShot({ num: '1', shot: '3', priority: 'low', location: 'Cafe', characters: 'Bob', description: 'Reaction close up on Bob, looking shocked', props: 'Coffee cup', duration: '0:08', shotSize: 'CU', lens: '85mm', movement: 'STATIC' }),
+      createShot({ num: '1', shot: '1', priority: 'medium', location: 'Cafe', characters: 'Alice, Bob', description: 'Wide master shot of Alice and Bob discussing the mystery map', props: 'Old map, coffee cups', duration: '0:15', shotSize: 'WIDE', movement: '' }),
+      createShot({ num: '1', shot: '2', priority: 'low', location: 'Cafe', characters: 'Alice', description: 'Close up on Alice as she reveals the secret location', props: 'Old map', duration: '0:10', shotSize: 'CU', lens: '50mm', movement: '' }),
+      createShot({ num: '1', shot: '3', priority: 'low', location: 'Cafe', characters: 'Bob', description: 'Reaction close up on Bob, looking shocked', props: 'Coffee cup', duration: '0:08', shotSize: 'CU', lens: '85mm', movement: '' }),
       
       createBlock({ blockType: 'CUSTOM', label: 'LOCATION MOVE / SETUP', duration: '0:20' }),
       
       // Scene 2: Park - Bob alone
       createShot({ num: '2', shot: '1', priority: 'high', location: 'Park', characters: 'Bob', description: 'Tracking shot of Bob walking along the path, searching', props: 'Mobile phone', duration: '0:15', shotSize: 'MCU', lens: '35mm', movement: 'HANDHELD' }),
-      createShot({ num: '2', shot: '2', priority: 'medium', location: 'Park', characters: 'Bob', description: 'Insert shot of Bob finding the marked tree', props: 'Compass', duration: '0:05', shotSize: 'ECU', lens: '85mm', movement: 'STATIC' }),
+      createShot({ num: '2', shot: '2', priority: 'medium', location: 'Park', characters: 'Bob', description: 'Insert shot of Bob finding the marked tree', props: 'Compass', duration: '0:05', shotSize: 'ECU', lens: '85mm', movement: '' }),
       
       createBlock({ blockType: 'LUNCH', label: 'LUNCH BREAK', duration: '1:00' }),
       
       // Scene 3: Cafe - Alice waiting
       createShot({ num: '3', shot: '1', priority: 'medium', location: 'Cafe', characters: 'Alice', description: 'Medium shot of Alice pacing near the window, checking her watch', props: 'Wristwatch', duration: '0:10', shotSize: 'MS', lens: '35mm', movement: 'DOLLY' }),
-      createShot({ num: '3', shot: '2', priority: 'low', location: 'Cafe', characters: 'Alice', description: 'Tight close up on Alice looking anxious', props: '', duration: '0:07', shotSize: 'CU', lens: '50mm', movement: 'STATIC' })
+      createShot({ num: '3', shot: '2', priority: 'low', location: 'Cafe', characters: 'Alice', description: 'Tight close up on Alice looking anxious', props: '', duration: '0:07', shotSize: 'CU', lens: '50mm', movement: '' })
     ]);
     dom.projectTitle.textContent = 'Untitled Project';
     state.scheduleDirty = true;

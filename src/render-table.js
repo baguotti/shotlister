@@ -236,7 +236,7 @@ import { syncRequest } from './sync.js';
     const rowStyle = group ? `background:${group.bg};` : '';
     const borderStyle = group ? `border-left-color:${group.border} !important;` : '';
 
-    const movOpts  = buildSelectOpts(MOVEMENT_TYPES, state.acSets.movement, s.movement || 'STATIC');
+    const movOpts  = buildSelectOpts(MOVEMENT_TYPES, state.acSets.movement, s.movement || '');
     const sizeOpts = buildSelectOpts(SHOT_SIZES,     state.acSets.shotSize, s.shotSize || '');
     const lensOpts = buildSelectOpts(LENS_OPTIONS,   state.acSets.lens,     s.lens || '');
 
@@ -257,7 +257,7 @@ import { syncRequest } from './sync.js';
       <td contenteditable="true" data-field="characters">${esc(s.characters)}</td>
       <td><select class="screen-only" data-field="shotSize">${sizeOpts}</select><span class="print-only">${esc(s.shotSize || '')}</span></td>
       <td class="hide-tablet"><select class="screen-only" data-field="lens">${lensOpts}</select><span class="print-only">${esc(s.lens || '')}</span></td>
-      <td><select class="screen-only" data-field="movement">${movOpts}</select><span class="print-only">${esc(s.movement || 'STATIC')}</span></td>
+      <td><select class="screen-only" data-field="movement">${movOpts}</select><span class="print-only">${esc(s.movement || '')}</span></td>
       <td class="hide-tablet" contenteditable="true" data-field="props">${esc(s.props)}</td>
       <td>
         <input class="duration-input screen-only${durValid ? '' : ' invalid'}" type="text" value="${esc(s.duration)}" placeholder="HH:MM" data-field="duration">
@@ -810,7 +810,7 @@ import { syncRequest } from './sync.js';
       storyboardContent = `<div class="gc-board-placeholder" style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;">Upload Board</div>`;
     }
 
-    const movOpts  = buildSelectOpts(MOVEMENT_TYPES, state.acSets.movement, s.movement || 'STATIC');
+    const movOpts  = buildSelectOpts(MOVEMENT_TYPES, state.acSets.movement, s.movement || '');
     const sizeOpts = buildSelectOpts(SHOT_SIZES,     state.acSets.shotSize, s.shotSize || '');
     const lensOpts = buildSelectOpts(LENS_OPTIONS,   state.acSets.lens,     s.lens || '');
 
