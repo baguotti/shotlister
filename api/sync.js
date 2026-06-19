@@ -44,7 +44,7 @@ export default async function handler(req, res) {
     return res.status(413).json({ error: 'Payload too large (Max 5MB)' });
   }
 
-  if (!passcode || typeof passcode !== 'string' || passcode.length > 50) {
+  if (!passcode || typeof passcode !== 'string' || passcode.length > 100) {
     return res.status(400).json({ error: 'Invalid passcode format' });
   }
 
