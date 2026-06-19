@@ -388,7 +388,7 @@ table {
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
-  min-width: 1000px;
+  min-width: max-content;
 }
 
 thead {
@@ -419,8 +419,8 @@ thead th {
 .col-num, .col-shotnum { width: 40px; }
 .col-priority { width: 40px; }
 .col-location { width: 90px; }
-.col-desc { width: auto; min-width: 120px; }
-.col-notes { width: auto; min-width: 100px; }
+.col-desc, td[data-field="description"] { width: auto; min-width: 180px; }
+.col-notes, td[data-field="notes"] { width: auto; min-width: 150px; }
 .col-chars { width: 90px; }
 .col-shotsize { width: 80px; }
 .col-lens { width: 65px; }
