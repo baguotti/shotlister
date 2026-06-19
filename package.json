@@ -1,6 +1,6 @@
 {
   "name": "shotlister",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Offline PWA shot list manager for film production",
   "type": "module",
   "scripts": {
@@ -19,7 +19,8 @@
   },
   "homepage": "https://github.com/baguotti/shotlister#readme",
   "devDependencies": {
-    "vite": "^8.0.16"
+    "vite": "^8.0.16",
+    "vite-plugin-pwa": "^1.3.0"
   },
   "dependencies": {
     "@upstash/redis": "^1.38.0"
