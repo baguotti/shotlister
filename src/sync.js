@@ -1,6 +1,6 @@
 import { state, LS_SYNC_CODE_KEY, LS_LAST_PROJ_KEY } from './state.js';
 import { dom } from './dom.js';
-import { getProject } from './db.js';
+import { getProject, getImage } from './db.js';
 import { renderHome, loadProject } from './main.js';
 import { saveProjects } from './storage.js';
 
@@ -79,6 +79,14 @@ export async function connectAndSync(passcode) {
       const shots = await getProject(p.id);
       if (shots) {
         await syncRequest('save_project', { projectId: p.id, shots });
+        for (const s of shots) {
+          if (s.storyboard === true) {
+            const dataUrl = await getImage(s.id);
+            if (dataUrl) {
+              await syncRequest('save_image', { imageId: s.id, dataUrl });
+            }
+          }
+        }
       }
     }
     

@@ -11,6 +11,7 @@ import { initDrag, initTouchDrag } from './drag-drop.js';
 import { applyBulkEdit, updateSelectionUI } from './bulk-actions.js';
 import { getGroupInfo } from './grouping.js';
 import { putImage, getImage } from './db.js';
+import { syncRequest } from './sync.js';
   // ── Render: Table ──────────────────────────────
   export function renderTable() {
     const filtered = state.shots;
@@ -186,7 +187,13 @@ import { putImage, getImage } from './db.js';
     for (const img of lazyImages) {
       if (img.dataset.hydrated) continue;
       const id = img.dataset.lazyImg;
-      const blobOrDataUrl = await getImage(id);
+      let blobOrDataUrl = await getImage(id);
+      if (!blobOrDataUrl && state.syncPasscode) {
+        blobOrDataUrl = await syncRequest('get_image', { imageId: id });
+        if (blobOrDataUrl) {
+          await putImage(id, blobOrDataUrl);
+        }
+      }
       if (blobOrDataUrl) {
         img.src = blobOrDataUrl;
       }
@@ -640,6 +647,9 @@ import { putImage, getImage } from './db.js';
         const shot = getShot(state.currentStoryboardId);
         if (shot) {
           putImage(shot.id, dataUrl).then(() => {
+            if (state.syncPasscode) {
+              syncRequest('save_image', { imageId: shot.id, dataUrl });
+            }
             shot.storyboard = true;
             save();
             render();

@@ -80,6 +80,24 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true });
     }
 
+    if (action === 'get_image') {
+      const { imageId } = payload || {};
+      if (!imageId || typeof imageId !== 'string' || imageId.length > 50) {
+        return res.status(400).json({ error: 'Invalid imageId' });
+      }
+      const data = await redis.get(`sl:user:${passcode}:image:${imageId}`);
+      return res.status(200).json(data || null);
+    }
+
+    if (action === 'save_image') {
+      const { imageId, dataUrl } = payload || {};
+      if (!imageId || typeof imageId !== 'string' || imageId.length > 50) {
+        return res.status(400).json({ error: 'Invalid imageId' });
+      }
+      await redis.set(`sl:user:${passcode}:image:${imageId}`, dataUrl);
+      return res.status(200).json({ success: true });
+    }
+
     if (action === 'delete_project') {
       const { projectId } = payload || {};
       if (!projectId || typeof projectId !== 'string' || projectId.length > 50) {

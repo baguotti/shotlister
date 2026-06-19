@@ -613,6 +613,9 @@ import { onRender, render } from './events.js';
         for (const s of rawShots) {
           if (typeof s.storyboard === 'string' && s.storyboard.startsWith('data:image/')) {
             await putImage(s.id, s.storyboard);
+            if (state.syncPasscode) {
+              await syncRequest('save_image', { imageId: s.id, dataUrl: s.storyboard });
+            }
             s.storyboard = true;
             imagesMigrated = true;
           }
