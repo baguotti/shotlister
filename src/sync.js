@@ -51,6 +51,7 @@ export async function connectAndSync(passcode) {
     state.syncPasscode = hashed;
     localStorage.setItem(LS_SYNC_CODE_KEY, hashed);
     dom.syncDisconnect.style.display = 'inline-block';
+    dom.syncForceImages.style.display = 'inline-block';
     
     const remoteList = await syncRequest('get_list');
     if (remoteList === null) {
@@ -127,9 +128,37 @@ export function initSyncListeners() {
       state.syncStatus = 'offline';
       localStorage.removeItem(LS_SYNC_CODE_KEY);
       dom.syncDisconnect.style.display = 'none';
+      dom.syncForceImages.style.display = 'none';
       updateSyncStatus('offline');
       dom.syncModal.close();
       renderHome();
+    }
+  });
+
+  dom.syncForceImages.addEventListener('click', async () => {
+    if (!state.currentProjectId || !state.syncPasscode) return;
+    try {
+      const originalText = dom.syncForceImages.textContent;
+      dom.syncForceImages.textContent = 'Uploading...';
+      dom.syncForceImages.disabled = true;
+      for (const s of state.shots) {
+        if (s.storyboard === true) {
+          const dataUrl = await getImage(s.id);
+          if (dataUrl) {
+            await syncRequest('save_image', { imageId: s.id, dataUrl });
+          }
+        }
+      }
+      dom.syncForceImages.textContent = 'Done!';
+      setTimeout(() => {
+        dom.syncForceImages.textContent = originalText;
+        dom.syncForceImages.disabled = false;
+        dom.syncModal.close();
+      }, 1500);
+    } catch (e) {
+      console.error(e);
+      alert('Failed to upload images.');
+      dom.syncForceImages.disabled = false;
     }
   });
 }
@@ -139,6 +168,7 @@ export async function initSyncAndLoad() {
   if (savedSyncCode) {
     state.syncPasscode = savedSyncCode;
     dom.syncDisconnect.style.display = 'inline-block';
+    dom.syncForceImages.style.display = 'inline-block';
     updateSyncStatus('syncing');
     
     const remoteList = await syncRequest('get_list');

@@ -47,6 +47,7 @@ export const dom = {
   syncPasscodeInput: $('syncPasscodeInput'),
   syncCancel: $('syncCancel'),
   syncDisconnect: $('syncDisconnect'),
+  syncForceImages: $('syncForceImages'),
   syncSubmit: $('syncSubmit')
 };
 
