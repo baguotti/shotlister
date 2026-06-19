@@ -1,6 +1,7 @@
 import { dom, $ } from './dom.js';
 import { ICON_DUP, ICON_EXP, ICON_DEL } from './icons.js';
-import { state, PRESETS, createShot, createBlock, LS_KEY, LS_TITLE_KEY, LS_PROJECTS_KEY, LS_LAST_PROJ_KEY, LS_THEME_KEY, LS_PRESET_KEY, LS_RATIO_KEY, LS_VIEW_MODE_KEY, LS_GRID_VIS_KEY, LS_SYNC_CODE_KEY, uid, GROUP_MODES, clearSelection, setProjectsList, setCurrentProjectId, setShots, setViewMode, setCurrentGroupMode, setContextRowId, setDragSrcId, setCurrentStoryboardId, setCurrentPreset, setBoardRatio, setGridVisibility, getNextShotNumber } from './state.js';
+import { state, PRESETS, createShot, createBlock, LS_KEY, LS_TITLE_KEY, LS_PROJECTS_KEY, LS_LAST_PROJ_KEY, LS_THEME_KEY, LS_PRESET_KEY, LS_RATIO_KEY, LS_VIEW_MODE_KEY, LS_GRID_VIS_KEY, LS_SYNC_CODE_KEY, uid, GROUP_MODES, clearSelection, getNextShotNumber, setShots } from './state.js';
+import { esc } from './utils.js';
 import { cascadeSchedule, formatDuration, formatOverrun, parseDuration, formatTime } from './schedule.js';
 import { renderTable, renderGrid, hideContextMenu, initTableDelegation } from './render-table.js';
 import { renderSettings } from './render-settings.js';
@@ -10,7 +11,9 @@ import { initPWA } from './pwa.js';
 import { getProject, putProject, deleteProject } from './db.js';
 import { initDrag, initTouchDrag, reorderShots } from './drag-drop.js';
 import { initBulkActions, updateSelectionUI } from './bulk-actions.js';
-import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
+import { initSyncListeners, initSyncAndLoad } from './sync.js';
+import { save, saveProjects, syncRequest } from './storage.js';
+import { onRender, render } from './events.js';
 
   // ── Title Auto-Resize ──────────────────────────
   // Binary-search the largest font-size that keeps text in one line.
@@ -105,7 +108,7 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
 
   // ── Preset Control ─────────────────────────────
   export function applyPreset(key) {
-    setCurrentPreset(key);
+    state.currentPreset = key;
     document.querySelectorAll('#presetCtrl button').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.preset === key);
     });
@@ -129,7 +132,7 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
 
   if (dom.boardRatioSelect) {
     dom.boardRatioSelect.addEventListener('change', e => {
-      setBoardRatio(e.target.value);
+      state.boardRatio = e.target.value;
       localStorage.setItem(LS_RATIO_KEY, state.boardRatio);
       applyBoardRatio();
     });
@@ -147,14 +150,14 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
     try {
       const pr = localStorage.getItem(LS_PRESET_KEY);
       if (pr && PRESETS[pr]) {
-        setCurrentPreset(pr);
+        state.currentPreset = pr;
         document.querySelectorAll('#presetCtrl button').forEach(btn => {
           btn.classList.toggle('active', btn.dataset.preset === pr);
         });
       }
       const vm = localStorage.getItem(LS_VIEW_MODE_KEY);
       if (vm === 'list' || vm === 'grid') {
-        setViewMode(vm);
+        state.viewMode = vm;
         $('btnViewMode').innerHTML = state.viewMode === 'list' ? '▦ Grid' : '▤ List';
       }
     } catch(e) { /* ignore */ }
@@ -164,7 +167,7 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
     try {
       const vis = localStorage.getItem(LS_GRID_VIS_KEY);
       if (vis) {
-        setGridVisibility({ ...state.gridVisibility, ...JSON.parse(vis) });
+        state.gridVisibility = { ...state.gridVisibility, ...JSON.parse(vis) };
       }
       if (dom.toggleGridHeader) dom.toggleGridHeader.checked = state.gridVisibility.header;
       if (dom.toggleGridLocation) dom.toggleGridLocation.checked = state.gridVisibility.location;
@@ -176,14 +179,14 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
   }
 
   export function saveGridVis() {
-    setGridVisibility({
+    state.gridVisibility = {
       header: dom.toggleGridHeader.checked,
       location: dom.toggleGridLocation.checked,
       schedule: dom.toggleGridSchedule.checked,
       description: dom.toggleGridDescription.checked,
       castProps: dom.toggleGridCastProps.checked,
       tech: dom.toggleGridTech.checked
-    });
+    };
     localStorage.setItem(LS_GRID_VIS_KEY, JSON.stringify(state.gridVisibility));
     render();
   }
@@ -192,10 +195,6 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
 
 
 
-  export function esc(s) {
-    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  }
 
 
   // ── Stats ──────────────────────────────────────
@@ -393,7 +392,7 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
       e.stopPropagation();
       const id = delBtn.dataset.del;
       if (confirm('Delete this project? This cannot be undone.')) {
-        setProjectsList(state.projectsList.filter(p => p.id !== id));
+        state.projectsList = state.projectsList.filter(p => p.id !== id);
         saveProjects();
         localStorage.removeItem('sl-project-' + id);
         deleteProject(id);
@@ -414,7 +413,7 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
 
   $('btnHome').addEventListener('click', () => {
     save();
-    setCurrentProjectId(null);
+    state.currentProjectId = null;
     localStorage.removeItem(LS_LAST_PROJ_KEY);
     renderHome();
   });
@@ -428,7 +427,7 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
 
   document.querySelectorAll('#dropGroup .dropdown-content .btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
-      setCurrentGroupMode(e.target.dataset.group);
+      state.currentGroupMode = e.target.dataset.group;
       const labelMap = {
         'none': 'Group',
         'scene': 'Group: Scene',
@@ -444,7 +443,7 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
 
   initBulkActions();
   $('btnViewMode').addEventListener('click', () => {
-    setViewMode(state.viewMode === 'list' ? 'grid' : 'list');
+    state.viewMode = state.viewMode === 'list' ? 'grid' : 'list';
     $('btnViewMode').innerHTML = state.viewMode === 'list' ? '▦ Grid' : '▤ List';
     try { localStorage.setItem(LS_VIEW_MODE_KEY, state.viewMode); } catch(e) {}
     render();
@@ -576,59 +575,7 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
   });
 
   // ── Persistence ────────────────────────────────
-  export function saveProjects() {
-    try {
-      localStorage.setItem(LS_PROJECTS_KEY, JSON.stringify(state.projectsList));
-      if (state.syncPasscode) {
-        syncRequest('save_list', state.projectsList);
-      }
-    } catch(e) {}
-  }
 
-  export function migrateLegacyData() {
-    try {
-      const p = localStorage.getItem(LS_PROJECTS_KEY);
-      if (p) setProjectsList(JSON.parse(p));
-    } catch(e) {}
-    
-    const raw = localStorage.getItem(LS_KEY);
-    if (raw && state.projectsList.length === 0) {
-      const oldTitle = localStorage.getItem(LS_TITLE_KEY) || 'Legacy Project';
-      const pid = uid();
-      localStorage.setItem('sl-project-' + pid, raw);
-      let legacyShots = [];
-      try { legacyShots = JSON.parse(raw); } catch(e){}
-      state.projectsList.push({ id: pid, title: oldTitle, updatedAt: Date.now(), count: legacyShots.length });
-      saveProjects();
-      localStorage.removeItem(LS_KEY);
-      localStorage.removeItem(LS_TITLE_KEY);
-    }
-  }
-
-  let saveTimeout = null;
-  export function save() {
-    clearTimeout(saveTimeout);
-    saveTimeout = setTimeout(doSave, 500);
-  }
-
-  async function doSave() {
-    if (!state.currentProjectId) return;
-    try {
-      await putProject(state.currentProjectId, state.shots);
-      const p = state.projectsList.find(x => x.id === state.currentProjectId);
-      if (p) {
-        p.title = dom.projectTitle.textContent.trim() || 'Untitled Project';
-        p.updatedAt = Date.now();
-        p.count = state.shots.length;
-        saveProjects();
-      }
-      if (state.syncPasscode) {
-        syncRequest('save_project', { projectId: state.currentProjectId, shots: state.shots });
-      }
-    } catch(e) {
-      console.error('IndexedDB save failed:', e);
-    }
-  }
 
   export async function getShotsForProject(id) {
     if (id === state.currentProjectId) return [...state.shots];
@@ -639,7 +586,7 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
   }
 
   export async function loadProject(id) {
-    setCurrentProjectId(id);
+    state.currentProjectId = id;
     try {
       let rawShots = null;
       // Check localStorage first (migration)
@@ -699,9 +646,9 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
     $('homeView').style.display = 'none';
     $('editorView').style.display = 'flex';
     
-    setCurrentStoryboardId(null);
-    setDragSrcId(null);
-    setContextRowId(null);
+    state.currentStoryboardId = null;
+    state.dragSrcId = null;
+    state.contextRowId = null;
     hideContextMenu();
     clearSelection();
     updateSelectionUI();
@@ -757,8 +704,11 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
   }
 
   // ── Render Orchestrator ────────────────────────
-  export function render() {
-    cascadeSchedule();
+  function renderAll() {
+    if (state.scheduleDirty) {
+      cascadeSchedule();
+      state.scheduleDirty = false;
+    }
     renderTimeline();
 
     if (state.viewMode === 'grid') {
@@ -778,6 +728,7 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
     }
     applyPresetLayout();
   }
+  onRender(renderAll);
 
   // ── Init ───────────────────────────────────────
   loadLayout();
@@ -787,7 +738,7 @@ import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
     if (t) t.addEventListener('change', saveGridVis);
   });
   const loadedRatio = localStorage.getItem(LS_RATIO_KEY);
-  if (loadedRatio) setBoardRatio(loadedRatio);
+  if (loadedRatio) state.boardRatio = loadedRatio;
   applyBoardRatio();
   
   initTableDelegation();

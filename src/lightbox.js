@@ -1,6 +1,7 @@
 import { dom } from './dom.js';
-import { state, setLbShotIds, setLbIndex, setCurrentStoryboardId } from './state.js';
-import { render, save } from './main.js';
+import { state } from './state.js';
+import { render } from './events.js';
+import { save } from './storage.js';
 import { formatTime, formatOverrun } from './schedule.js';
   // ── Lightbox ───────────────────────────────────
   export function getShotLabel(shot) {
@@ -19,12 +20,12 @@ import { formatTime, formatOverrun } from './schedule.js';
       dom.shotBody.querySelectorAll('tr[data-id]')
     ).map(tr => tr.dataset.id);
 
-    setLbShotIds(renderedIds.filter(rid => {
-      const s = state.shots.find(s => s.id === rid);
+    state.lbShotIds = renderedIds.filter(rid => {
+      const s = getShot(rid);
       return s && s.storyboard;
-    }));
+    });
 
-    setLbIndex(state.lbShotIds.indexOf(id));
+    state.lbIndex = state.lbShotIds.indexOf(id);
     if (state.lbIndex === -1) return; // shouldn't happen
 
     lbRefresh();
@@ -35,13 +36,13 @@ import { formatTime, formatOverrun } from './schedule.js';
   export function closeLightbox() {
     dom.lightbox.classList.remove('lb-visible');
     document.body.style.overflow = '';
-    setLbShotIds([]);
-    setLbIndex(-1);
+    state.lbShotIds = [];
+    state.lbIndex = -1;
   }
 
   function lbRefresh() {
     const id   = state.lbShotIds[state.lbIndex];
-    const shot = state.shots.find(s => s.id === id);
+    const shot = getShot(id);
     if (!shot) return;
 
     dom.lbImg.style.opacity = '0';
@@ -114,7 +115,7 @@ import { formatTime, formatOverrun } from './schedule.js';
   function lbNavigate(dir) {
     const next = state.lbIndex + dir;
     if (next < 0 || next >= state.lbShotIds.length) return;
-    setLbIndex(next);
+    state.lbIndex = next;
     lbRefresh();
   }
 
@@ -132,18 +133,18 @@ import { formatTime, formatOverrun } from './schedule.js';
   dom.lbDelete.addEventListener('click', e => {
     e.stopPropagation();
     const id   = state.lbShotIds[state.lbIndex];
-    const shot = state.shots.find(s => s.id === id);
+    const shot = getShot(id);
     if (!shot) return;
     shot.storyboard = '';
     save(); render();
 
     const newIds = [...state.lbShotIds];
     newIds.splice(state.lbIndex, 1);
-    setLbShotIds(newIds);
+    state.lbShotIds = newIds;
     if (state.lbShotIds.length === 0) {
       closeLightbox();
     } else {
-      setLbIndex(Math.min(state.lbIndex, state.lbShotIds.length - 1));
+      state.lbIndex = Math.min(state.lbIndex, state.lbShotIds.length - 1);
       lbRefresh();
     }
   });

@@ -1,6 +1,7 @@
-import { state, clearSelection, uid, setShots } from './state.js';
+import { state, clearSelection, uid, setShots, getShot } from './state.js';
 import { dom, $ } from './dom.js';
-import { render, save } from './main.js';
+import { render } from './events.js';
+import { save } from './storage.js';
 
 export function updateSelectionUI() {
   const bar = $('bulkActionBar');
@@ -24,12 +25,15 @@ export function updateSelectionUI() {
 export function applyBulkEdit(id, field, val) {
   if (state.selectedIds.has(id)) {
     state.selectedIds.forEach(selectedId => {
-      const s = state.shots.find(x => x.id === selectedId);
+      const s = getShot(selectedId);
       if (s) s[field] = val;
     });
   } else {
-    const shot = state.shots.find(s => s.id === id);
+    const shot = getShot(id);
     if (shot) shot[field] = val;
+  }
+  if (field === 'duration' || field === 'callTime') {
+    state.scheduleDirty = true;
   }
 }
 

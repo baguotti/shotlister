@@ -1,9 +1,12 @@
 import { dom, $, customPrompt } from './dom.js';
-import { state, getSceneGroup, createShot, createBlock, PRIORITY_CYCLE, MOVEMENT_TYPES, SHOT_SIZES, LENS_OPTIONS, uid, setCurrentStoryboardId, setContextRowId, setShots, getNextShotNumber } from './state.js';
+import { state, getSceneGroup, createShot, createBlock, PRIORITY_CYCLE, MOVEMENT_TYPES, SHOT_SIZES, LENS_OPTIONS, uid, setShots, getNextShotNumber, getShot } from './state.js';
 import { parseDuration, formatDuration, formatTime, formatOverrun, isValidDuration, isValidTime, normalizeDuration, normalizeTime, cascadeSchedule } from './schedule.js';
 import { openLightbox } from './lightbox.js';
 import { showAutocomplete, hideAutocomplete, handleAutocompleteKey, filterAutocomplete, isAutocompleteActiveFor, scheduleAutocompleteHide, cancelAutocompleteHide, saveAutocomplete } from './autocomplete.js';
-import { render, save, updateStats, esc, applyPresetLayout } from './main.js';
+import { updateStats, applyPresetLayout } from './main.js';
+import { render } from './events.js';
+import { save } from './storage.js';
+import { esc } from './utils.js';
 import { initDrag, initTouchDrag } from './drag-drop.js';
 import { applyBulkEdit, updateSelectionUI } from './bulk-actions.js';
 import { getGroupInfo } from './grouping.js';
@@ -364,7 +367,7 @@ import { getGroupInfo } from './grouping.js';
 
       if (target.matches('select[data-field]')) {
         const row = target.closest('tr, .grid-card');
-        const shot = state.shots.find(s => s.id === row.dataset.id);
+        const shot = getShot(row.dataset.id);
         if (!shot) return;
         const field = target.dataset.field;
 
@@ -428,7 +431,7 @@ import { getGroupInfo } from './grouping.js';
         const row = target.closest('tr, .grid-card');
         if (row) {
           const id = row.dataset.id;
-          const shot = state.shots.find(s => s.id === id);
+          const shot = getShot(id);
           if (shot) { 
             const val = target.textContent.trim();
             applyBulkEdit(id, field, val);
@@ -457,7 +460,7 @@ import { getGroupInfo } from './grouping.js';
 
       if (target.matches('.duration-input')) {
         const row = target.closest('tr, .grid-card');
-        const shot = state.shots.find(s => s.id === row.dataset.id);
+        const shot = getShot(row.dataset.id);
         if (shot) {
           const normalized = normalizeDuration(target.value.trim());
           applyBulkEdit(shot.id, 'duration', normalized);
@@ -468,13 +471,13 @@ import { getGroupInfo } from './grouping.js';
 
       if (target.matches('.block-label')) {
         const row = target.closest('tr, .grid-card');
-        const shot = state.shots.find(s => s.id === row.dataset.id);
+        const shot = getShot(row.dataset.id);
         if (shot) { applyBulkEdit(shot.id, 'label', target.textContent.trim()); save(); }
       }
 
       if (target.matches('.time-input[data-field="callTime"]')) {
         const row = target.closest('tr, .grid-card');
-        const shot = state.shots.find(s => s.id === row.dataset.id);
+        const shot = getShot(row.dataset.id);
         if (shot) {
           const raw = target.value.trim();
           if (raw === '') {
@@ -553,7 +556,7 @@ import { getGroupInfo } from './grouping.js';
       const priorityLabel = target.closest('.priority-label');
       if (priorityLabel) {
         const id = priorityLabel.closest('tr, .grid-card').dataset.id;
-        const shot = state.shots.find(s => s.id === id);
+        const shot = getShot(id);
         if (shot) {
           const i = PRIORITY_CYCLE.indexOf(shot.priority);
           shot.priority = PRIORITY_CYCLE[(i+1) % PRIORITY_CYCLE.length];
@@ -566,12 +569,12 @@ import { getGroupInfo } from './grouping.js';
       if (storyboardCell) {
         const id = storyboardCell.dataset.id;
         if (!id) return; 
-        const shot = state.shots.find(s => s.id === id);
+        const shot = getShot(id);
         if (!shot) return;
         if (shot.storyboard) {
           openLightbox(id);
         } else {
-          setCurrentStoryboardId(id);
+          state.currentStoryboardId = id;
           dom.fileInput.click();
         }
         return;
@@ -581,7 +584,7 @@ import { getGroupInfo } from './grouping.js';
       if (actionsBtn) {
         e.stopPropagation();
         const row = actionsBtn.closest('tr, .grid-card');
-        setContextRowId(row.dataset.id);
+        state.contextRowId = row.dataset.id;
         showContextMenu(e.clientX, e.clientY);
         return;
       }
@@ -618,7 +621,7 @@ import { getGroupInfo } from './grouping.js';
         canvas.getContext('2d').drawImage(img, 0, 0, w, h);
         const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
 
-        const shot = state.shots.find(s => s.id === state.currentStoryboardId);
+        const shot = getShot(state.currentStoryboardId);
         if (shot) {
           shot.storyboard = dataUrl;
           save();
@@ -644,7 +647,7 @@ import { getGroupInfo } from './grouping.js';
 
   export function hideContextMenu() {
     dom.contextMenu.classList.remove('visible');
-    setContextRowId(null);
+    state.contextRowId = null;
   }
 
   document.addEventListener('click', hideContextMenu);
@@ -652,14 +655,14 @@ import { getGroupInfo } from './grouping.js';
     const row = e.target.closest('tr[data-id]');
     if (row) {
       e.preventDefault();
-      setContextRowId(row.dataset.id);
+      state.contextRowId = row.dataset.id;
       showContextMenu(e.clientX, e.clientY);
     }
   });
 
   $('cmDuplicate').addEventListener('click', () => {
     if (!state.contextRowId) return;
-    const src = state.shots.find(s => s.id === state.contextRowId);
+    const src = getShot(state.contextRowId);
     if (src) {
       const idx = state.shots.indexOf(src);
       const dup = createShot({ ...src, id: uid(), num: String(state.shots.length + 1), callTime: '' });

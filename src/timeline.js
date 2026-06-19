@@ -1,6 +1,6 @@
 import { dom, $ } from './dom.js';
 import { state, getSceneGroup } from './state.js';
-import { esc } from './main.js';
+import { esc } from './utils.js';
 import { parseDuration, formatDuration, formatTime } from './schedule.js';
   // ── Timeline Bar ───────────────────────────────
   let tlInitialized = false;

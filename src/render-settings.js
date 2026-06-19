@@ -1,7 +1,9 @@
 import { dom, $ } from './dom.js';
 import { state, SHOT_SIZES, LENS_OPTIONS, MOVEMENT_TYPES } from './state.js';
 import { saveAutocomplete } from './autocomplete.js';
-import { save, render, esc } from './main.js';
+import { render } from './events.js';
+import { save } from './storage.js';
+import { esc } from './utils.js';
 
 export function renderSettings() {
   const container = $('settingsView');

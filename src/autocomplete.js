@@ -1,6 +1,7 @@
 import { dom, $ } from './dom.js';
 import { state, SHOT_SIZES, LENS_OPTIONS, MOVEMENT_TYPES, LS_AC_CHARS, LS_AC_LOCS, LS_AC_PROPS, LS_AC_SHOTSIZE, LS_AC_LENS, LS_AC_MOVEMENT } from './state.js';
-import { render, save } from './main.js';
+import { render } from './events.js';
+import { save } from './storage.js';
   // ── Autocomplete ───────────────────────────────
   export function loadAutocomplete() {
     try {

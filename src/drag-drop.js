@@ -1,10 +1,11 @@
-import { state, setDragSrcId, setShots } from './state.js';
-import { render, save } from './main.js';
+import { state, setShots } from './state.js';
+import { render } from './events.js';
+import { save } from './storage.js';
 import { softRender } from './render-table.js';
 
 export function initDrag(e, handle) {
   const row = handle.closest('tr, .grid-card');
-  setDragSrcId(row.dataset.id);
+  state.dragSrcId = row.dataset.id;
   row.classList.add('dragging');
 
   const onMove = e2 => {
@@ -27,7 +28,7 @@ export function initDrag(e, handle) {
     if (targetRow && targetRow.dataset.id !== state.dragSrcId) {
       reorderShots(state.dragSrcId, targetRow.dataset.id);
     }
-    setDragSrcId(null);
+    state.dragSrcId = null;
   };
 
   document.addEventListener('mousemove', onMove);
@@ -37,7 +38,7 @@ export function initDrag(e, handle) {
 export function initTouchDrag(e, handle) {
   e.preventDefault();
   const row = handle.closest('tr, .grid-card');
-  setDragSrcId(row.dataset.id);
+  state.dragSrcId = row.dataset.id;
   row.classList.add('dragging');
 
   const onMove = e2 => {
@@ -62,7 +63,7 @@ export function initTouchDrag(e, handle) {
     if (targetRow && targetRow.dataset.id !== state.dragSrcId) {
       reorderShots(state.dragSrcId, targetRow.dataset.id);
     }
-    setDragSrcId(null);
+    state.dragSrcId = null;
   };
 
   document.addEventListener('touchmove', onMove, { passive: false });
@@ -76,6 +77,7 @@ export function reorderShots(srcId, targetId) {
   const updatedShots = [...state.shots];
   const [moved] = updatedShots.splice(srcIdx, 1);
   updatedShots.splice(tgtIdx, 0, moved);
+  state.scheduleDirty = true;
   setShots(updatedShots);
   if (state.currentGroupMode !== 'none') {
     save(); render();
