@@ -187,17 +187,21 @@ import { syncRequest } from './sync.js';
     for (const img of lazyImages) {
       if (img.dataset.hydrated) continue;
       const id = img.dataset.lazyImg;
-      let blobOrDataUrl = await getImage(id);
-      if (!blobOrDataUrl && state.syncPasscode) {
-        blobOrDataUrl = await syncRequest('get_image', { imageId: id });
-        if (blobOrDataUrl) {
-          await putImage(id, blobOrDataUrl);
+      try {
+        let blobOrDataUrl = await getImage(id).catch(() => null);
+        if (!blobOrDataUrl && state.syncPasscode) {
+          blobOrDataUrl = await syncRequest('get_image', { imageId: id });
+          if (blobOrDataUrl) {
+            await putImage(id, blobOrDataUrl).catch(() => {});
+          }
         }
+        if (blobOrDataUrl) {
+          img.src = blobOrDataUrl;
+        }
+        img.dataset.hydrated = "true";
+      } catch (e) {
+        console.error('Failed to hydrate image', id, e);
       }
-      if (blobOrDataUrl) {
-        img.src = blobOrDataUrl;
-      }
-      img.dataset.hydrated = "true";
     }
   }
 
