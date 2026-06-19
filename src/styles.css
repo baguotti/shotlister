@@ -419,8 +419,8 @@ thead th {
 .col-num, .col-shotnum { width: 40px; }
 .col-priority { width: 40px; }
 .col-location { width: 90px; }
-.col-desc, td[data-field="description"] { width: auto; min-width: 180px; }
-.col-notes, td[data-field="notes"] { width: auto; min-width: 150px; }
+.col-desc, td[data-field="description"] { width: 250px; }
+.col-notes, td[data-field="notes"] { width: 180px; }
 .col-chars { width: 90px; }
 .col-shotsize { width: 80px; }
 .col-lens { width: 65px; }
