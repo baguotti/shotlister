@@ -88,6 +88,7 @@ import { state, getSceneGroup } from './state.js';
     state.scheduleMap = {};
     state.groupTotals = {};
     let prevEndMin = -1;
+    console.log('cascadeSchedule starting. Total shots:', state.shots.length);
 
     for (let i = 0; i < state.shots.length; i++) {
       const s = state.shots[i];

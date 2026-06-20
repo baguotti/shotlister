@@ -32,23 +32,48 @@ import { syncRequest } from './sync.js';
       order.forEach(key => {
         const { icon } = getGroupInfo(groups[key][0] || {});
 
-        html += `<tr class="location-group"><td colspan="18">${icon}${esc(key)}</td></tr>`;
+        let totalColSpan = 5; // drag, select, storyboard, scene, shot
+        if (state.tableVisibility.priority) totalColSpan++;
+        if (state.tableVisibility.location) totalColSpan++;
+        if (state.tableVisibility.description) totalColSpan++;
+        if (state.tableVisibility.notes) totalColSpan++;
+        if (state.tableVisibility.characters) totalColSpan++;
+        if (state.tableVisibility.shotsize) totalColSpan++;
+        if (state.tableVisibility.lens) totalColSpan++;
+        if (state.tableVisibility.movement) totalColSpan++;
+        if (state.tableVisibility.props) totalColSpan++;
+        if (state.tableVisibility.duration) totalColSpan++;
+        if (state.tableVisibility.calltime) totalColSpan++;
+        if (state.tableVisibility.endtime) totalColSpan++;
+        if (state.tableVisibility.running) totalColSpan++;
+
+        html += `<tr class="location-group"><td colspan="${totalColSpan + 1}">${icon}${esc(key)}</td></tr>`;
         let groupCum = 0;
         groups[key].forEach(s => {
           const dur = parseDuration(s.duration);
           if (dur > 0) { cumulative += dur; groupCum += dur; }
           html += s.kind === 'block' ? buildBlockRow(s, cumulative) : buildRow(s, cumulative);
         });
+        
+        let summaryColSpan = 3; // storyboard, scene, shot
+        if (state.tableVisibility.priority) summaryColSpan++;
+        if (state.tableVisibility.location) summaryColSpan++;
+        if (state.tableVisibility.description) summaryColSpan++;
+        if (state.tableVisibility.notes) summaryColSpan++;
+          
         html += `<tr class="location-subtotal">
           <td class="drag-handle"></td>
           <td class="col-select"></td>
-          <td colspan="7"></td>
-          <td></td>
-          <td class="hide-tablet"></td>
-          <td></td>
-          <td class="hide-tablet"></td>
-          <td colspan="3" style="text-align:center">${groups[key].length} items · ${formatDuration(groupCum)}</td>
-          <td class="hide-tablet"></td>
+          <td colspan="${summaryColSpan}"></td>
+          ${state.tableVisibility.characters ? `<td></td>` : ''}
+          ${state.tableVisibility.shotsize ? `<td></td>` : ''}
+          ${state.tableVisibility.lens ? `<td class="hide-tablet"></td>` : ''}
+          ${state.tableVisibility.movement ? `<td></td>` : ''}
+          ${state.tableVisibility.props ? `<td class="hide-tablet"></td>` : ''}
+          ${state.tableVisibility.duration ? `<td style="text-align:right">${groups[key].length} items · </td>` : ''}
+          ${state.tableVisibility.calltime ? `<td style="text-align:left">${formatDuration(groupCum)}</td>` : ''}
+          ${state.tableVisibility.endtime ? `<td></td>` : ''}
+          ${state.tableVisibility.running ? `<td class="hide-tablet"></td>` : ''}
           <td class="col-actions"></td>
         </tr>`;
       });
@@ -69,29 +94,39 @@ import { syncRequest } from './sync.js';
           let totalDur = 0;
           sceneShots.forEach(sh => totalDur += parseDuration(sh.duration));
           
+              let summaryColSpan = 3; // storyboard, scene, shot
+          if (state.tableVisibility.priority) summaryColSpan++;
+          if (state.tableVisibility.location) summaryColSpan++;
+          if (state.tableVisibility.description) summaryColSpan++;
+          if (state.tableVisibility.notes) summaryColSpan++;
+          
           html += `<tr class="scene-summary-row" style="background: var(--bg-2); border-bottom: 1px solid var(--border);">
             <td class="drag-handle"></td>
             <td class="col-select"></td>
-            <td colspan="7" style="text-align: right; font-family: var(--font-mono); font-size: 11px; color: var(--text-2); padding: 6px 12px; font-weight: 600; text-transform: uppercase;">
+            <td colspan="${summaryColSpan}" style="text-align: right; font-family: var(--font-mono); font-size: 11px; color: var(--text-2); padding: 6px 12px; font-weight: 600; text-transform: uppercase;">
               Scene ${esc(currentScene)} Summary
             </td>
-            <td></td>
-            <td class="hide-tablet"></td>
-            <td></td>
-            <td class="hide-tablet"></td>
+            ${state.tableVisibility.characters ? `<td></td>` : ''}
+            ${state.tableVisibility.shotsize ? `<td></td>` : ''}
+            ${state.tableVisibility.lens ? `<td class="hide-tablet"></td>` : ''}
+            ${state.tableVisibility.movement ? `<td></td>` : ''}
+            ${state.tableVisibility.props ? `<td class="hide-tablet"></td>` : ''}
+            ${state.tableVisibility.duration ? `
             <td style="text-align: center; font-family: var(--font-mono); font-size: 11px; color: var(--text-0); padding: 4px; font-weight: bold; line-height: 1.2;">
               <span style="font-size: 8px; color: var(--text-2); font-weight: normal; display: block; text-transform: uppercase; letter-spacing: 0.5px;">Total</span>
-              ${formatDuration(totalDur)}
-            </td>
+              <span class="scene-total-dur" data-scene="${esc(currentScene)}">${formatDuration(totalDur)}</span>
+            </td>` : ''}
+            ${state.tableVisibility.calltime ? `
             <td style="text-align: center; font-family: var(--font-mono); font-size: 11px; color: var(--text-0); padding: 4px; font-weight: bold; line-height: 1.2;">
               <span style="font-size: 8px; color: var(--text-2); font-weight: normal; display: block; text-transform: uppercase; letter-spacing: 0.5px;">Start</span>
-              ${startStr}
-            </td>
+              <span class="scene-start-time" data-scene="${esc(currentScene)}">${startStr}</span>
+            </td>` : ''}
+            ${state.tableVisibility.endtime ? `
             <td style="text-align: center; font-family: var(--font-mono); font-size: 11px; color: var(--text-0); padding: 4px; font-weight: bold; line-height: 1.2;">
               <span style="font-size: 8px; color: var(--text-2); font-weight: normal; display: block; text-transform: uppercase; letter-spacing: 0.5px;">End</span>
-              ${endStr}
-            </td>
-            <td class="hide-tablet"></td>
+              <span class="scene-end-time" data-scene="${esc(currentScene)}">${endStr}</span>
+            </td>` : ''}
+            ${state.tableVisibility.running ? `<td class="hide-tablet"></td>` : ''}
             <td class="col-actions"></td>
           </tr>`;
         }
@@ -180,6 +215,42 @@ import { syncRequest } from './sync.js';
         }
       }
     });
+
+    // Dynamically recalculate and update scene summaries based on the newly computed state.scheduleMap
+    const scenes = new Map();
+    state.shots.forEach(s => {
+      const sceneNum = s.num ? String(s.num).trim() : '';
+      if (s.kind === 'shot' || sceneNum !== '') {
+        if (!scenes.has(sceneNum)) scenes.set(sceneNum, []);
+        if (s.kind === 'shot') scenes.get(sceneNum).push(s);
+      }
+    });
+
+    scenes.forEach((sceneShots, sceneNum) => {
+      if (sceneShots.length > 0) {
+        let totalDur = 0;
+        sceneShots.forEach(sh => totalDur += parseDuration(sh.duration));
+        
+        const firstShot = sceneShots[0];
+        const lastShot = sceneShots[sceneShots.length - 1];
+        const startSched = state.scheduleMap[firstShot.id];
+        const endSched = state.scheduleMap[lastShot.id];
+        
+        const startStr = startSched && startSched.callMin >= 0 ? formatTime(startSched.callMin) : '--:--';
+        const endStr = endSched && endSched.endMin >= 0 ? formatTime(endSched.endMin) : '--:--';
+        
+        const safeSceneNum = String(sceneNum).replace(/"/g, '&quot;');
+        
+        const totalSpan = dom.shotBody.querySelector(`.scene-total-dur[data-scene="${safeSceneNum}"]`);
+        if (totalSpan) totalSpan.textContent = formatDuration(totalDur);
+        
+        const startSpan = dom.shotBody.querySelector(`.scene-start-time[data-scene="${safeSceneNum}"]`);
+        if (startSpan) startSpan.textContent = startStr;
+        
+        const endSpan = dom.shotBody.querySelector(`.scene-end-time[data-scene="${safeSceneNum}"]`);
+        if (endSpan) endSpan.textContent = endStr;
+      }
+    });
   }
 
   export async function hydrateImages() {
@@ -250,26 +321,26 @@ import { syncRequest } from './sync.js';
       <td class="storyboard-cell" data-id="${s.id}">${storyboardContent}</td>
       <td class="scene-num" contenteditable="true" data-field="num">${esc(s.num)}</td>
       <td class="shot-num" contenteditable="true" data-field="shot">${esc(s.shot || '')}</td>
-      <td style="text-align: center;"><span class="priority-label" data-p="${s.priority}" title="Priority: ${s.priority}">${prioDisplay}</span></td>
-      <td contenteditable="true" data-field="location">${esc(s.location)}</td>
-      <td contenteditable="true" data-field="description">${esc(s.description)}</td>
-      <td contenteditable="true" data-field="notes">${esc(s.notes)}</td>
-      <td contenteditable="true" data-field="characters">${esc(s.characters)}</td>
-      <td><select class="screen-only" data-field="shotSize">${sizeOpts}</select><span class="print-only">${esc(s.shotSize || '')}</span></td>
-      <td class="hide-tablet"><select class="screen-only" data-field="lens">${lensOpts}</select><span class="print-only">${esc(s.lens || '')}</span></td>
-      <td><select class="screen-only" data-field="movement">${movOpts}</select><span class="print-only">${esc(s.movement || '')}</span></td>
-      <td class="hide-tablet" contenteditable="true" data-field="props">${esc(s.props)}</td>
-      <td>
+      ${state.tableVisibility.priority ? `<td style="text-align: center;"><span class="priority-label" data-p="${s.priority}" title="Priority: ${s.priority}">${prioDisplay}</span></td>` : ''}
+      ${state.tableVisibility.location ? `<td contenteditable="true" data-field="location">${esc(s.location)}</td>` : ''}
+      ${state.tableVisibility.description ? `<td contenteditable="true" data-field="description">${esc(s.description)}</td>` : ''}
+      ${state.tableVisibility.notes ? `<td contenteditable="true" data-field="notes">${esc(s.notes)}</td>` : ''}
+      ${state.tableVisibility.characters ? `<td contenteditable="true" data-field="characters">${esc(s.characters)}</td>` : ''}
+      ${state.tableVisibility.shotsize ? `<td><select class="screen-only" data-field="shotSize">${sizeOpts}</select><span class="print-only">${esc(s.shotSize || '')}</span></td>` : ''}
+      ${state.tableVisibility.lens ? `<td class="hide-tablet"><select class="screen-only" data-field="lens">${lensOpts}</select><span class="print-only">${esc(s.lens || '')}</span></td>` : ''}
+      ${state.tableVisibility.movement ? `<td><select class="screen-only" data-field="movement">${movOpts}</select><span class="print-only">${esc(s.movement || '')}</span></td>` : ''}
+      ${state.tableVisibility.props ? `<td class="hide-tablet" contenteditable="true" data-field="props">${esc(s.props)}</td>` : ''}
+      ${state.tableVisibility.duration ? `<td>
         <input class="duration-input screen-only${durValid ? '' : ' invalid'}" type="text" value="${esc(s.duration)}" placeholder="HH:MM" data-field="duration">
         <span class="print-only">${esc(s.duration)}</span>
-      </td>
-      <td><div style="position:relative;display:flex;align-items:center;">
+      </td>` : ''}
+      ${state.tableVisibility.calltime ? `<td><div style="position:relative;display:flex;align-items:center;">
         <input class="time-input screen-only${callValid ? '' : ' invalid'}${inheritedClass}" type="text" value="${callTimeVal}" placeholder="HH:MM" data-field="callTime" data-inherited="${sched.isInherited}" style="padding-right: 18px;">
         <span class="print-only">${callTimeVal}</span>
         ${pinIcon}
-      </div></td>
-      <td class="end-time">${endTimeStr}</td>
-      <td class="running-time hide-tablet">${formatDuration(runTime)}</td>
+      </div></td>` : ''}
+      ${state.tableVisibility.endtime ? `<td class="end-time">${endTimeStr}</td>` : ''}
+      ${state.tableVisibility.running ? `<td class="running-time hide-tablet">${formatDuration(runTime)}</td>` : ''}
       <td class="col-actions"><button class="actions-btn" title="Actions" aria-label="Shot Actions">&#x22EF;</button></td>
     </tr>`;
   }
@@ -299,9 +370,9 @@ import { syncRequest } from './sync.js';
       <td class="storyboard-cell"></td>
       <td class="scene-num" contenteditable="true" data-field="num">${esc(s.num || '')}</td>
       <td class="shot-num"></td>
-      <td></td>
-      <td></td>
-      <td>
+      ${state.tableVisibility.priority ? `<td></td>` : ''}
+      ${state.tableVisibility.location ? `<td></td>` : ''}
+      ${state.tableVisibility.description ? `<td>
         <div style="display:inline-flex; align-items:center; gap:8px;">
           <select data-field="blockType" class="block-select screen-only">
             ${['PREP','BREAK','LUNCH','TRAVEL','CUSTOM'].map(t => `<option value="${t}"${s.blockType === t ? ' selected' : ''}>${t}</option>`).join('')}
@@ -309,24 +380,24 @@ import { syncRequest } from './sync.js';
           <span class="print-only">${esc(s.blockType)}</span>
           <span contenteditable="true" data-field="label" class="block-label" data-placeholder="Label..." style="${s.blockType === 'CUSTOM' ? 'display:inline-block;' : 'display:none;'}">${esc(s.label || '')}</span>
         </div>
-      </td>
-      <td contenteditable="true" data-field="notes">${esc(s.notes || '')}</td>
-      <td></td> <!-- Empty cell for Characters -->
-      <td></td>
-      <td class="hide-tablet"></td>
-      <td></td>
-      <td class="hide-tablet"></td>
-      <td>
+      </td>` : ''}
+      ${state.tableVisibility.notes ? `<td contenteditable="true" data-field="notes">${esc(s.notes || '')}</td>` : ''}
+      ${state.tableVisibility.characters ? `<td></td>` : ''}
+      ${state.tableVisibility.shotsize ? `<td></td>` : ''}
+      ${state.tableVisibility.lens ? `<td class="hide-tablet"></td>` : ''}
+      ${state.tableVisibility.movement ? `<td></td>` : ''}
+      ${state.tableVisibility.props ? `<td class="hide-tablet"></td>` : ''}
+      ${state.tableVisibility.duration ? `<td>
         <input class="duration-input screen-only${durValid ? '' : ' invalid'}" type="text" value="${esc(s.duration)}" placeholder="HH:MM" data-field="duration">
         <span class="print-only">${esc(s.duration)}</span>
-      </td>
-      <td><div style="position:relative;display:flex;align-items:center;">
+      </td>` : ''}
+      ${state.tableVisibility.calltime ? `<td><div style="position:relative;display:flex;align-items:center;">
         <input class="time-input screen-only${callValid ? '' : ' invalid'}${inheritedClass}" type="text" value="${callTimeVal}" placeholder="HH:MM" data-field="callTime" data-inherited="${sched.isInherited}" style="padding-right: 18px;">
         <span class="print-only">${callTimeVal}</span>
         ${pinIcon}
-      </div></td>
-      <td class="end-time">${endTimeStr}</td>
-      <td class="running-time hide-tablet">${formatDuration(runTime)}</td>
+      </div></td>` : ''}
+      ${state.tableVisibility.endtime ? `<td class="end-time">${endTimeStr}</td>` : ''}
+      ${state.tableVisibility.running ? `<td class="running-time hide-tablet">${formatDuration(runTime)}</td>` : ''}
       <td class="col-actions"><button class="actions-btn" title="Actions" aria-label="Shot Actions">&#x22EF;</button></td>
     </tr>`;
   }

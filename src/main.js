@@ -1,6 +1,6 @@
 import { dom, $ } from './dom.js';
 import { ICON_DUP, ICON_EXP, ICON_DEL } from './icons.js';
-import { state, PRESETS, createShot, createBlock, LS_KEY, LS_TITLE_KEY, LS_PROJECTS_KEY, LS_LAST_PROJ_KEY, LS_THEME_KEY, LS_PRESET_KEY, LS_RATIO_KEY, LS_VIEW_MODE_KEY, LS_GRID_VIS_KEY, LS_SYNC_CODE_KEY, uid, GROUP_MODES, clearSelection, getNextShotNumber, setShots } from './state.js';
+import { state, PRESETS, createShot, createBlock, LS_KEY, LS_TITLE_KEY, LS_PROJECTS_KEY, LS_LAST_PROJ_KEY, LS_THEME_KEY, LS_PRESET_KEY, LS_RATIO_KEY, LS_VIEW_MODE_KEY, LS_GRID_VIS_KEY, LS_TABLE_VIS_KEY, LS_SYNC_CODE_KEY, uid, GROUP_MODES, clearSelection, getNextShotNumber, setShots } from './state.js';
 import { esc } from './utils.js';
 import { cascadeSchedule, formatDuration, formatOverrun, parseDuration, formatTime } from './schedule.js';
 import { renderTable, renderGrid, hideContextMenu, initTableDelegation } from './render-table.js';
@@ -66,7 +66,7 @@ import { onRender, render } from './events.js';
     const ch = wrapper.clientHeight || Math.round(window.innerHeight * 0.65);
     const scale = PRESETS[state.currentPreset].scale;
     const rowH  = Math.max(30, Math.round(ch * BASE_ROW_FACTOR * scale));
-    const thumbSz = Math.max(20, Math.min(rowH - 6, Math.round(rowH * 0.78)));
+    const thumbSz = rowH; 
     return { rowH, thumbSz };
   }
 
@@ -82,25 +82,32 @@ import { onRender, render } from './events.js';
 
     if (state.viewMode !== 'list') return;
     
-    // Use a 1.6 aspect ratio for width so thumbnails are appropriately cinematic and much larger
-    const thumbW = Math.round(thumbSz * 1.6);
+    let ratioVal = 1.6;
+    if (state.boardRatio) {
+      const parts = state.boardRatio.split('/');
+      if (parts.length === 2 && parseFloat(parts[1]) !== 0) {
+        ratioVal = parseFloat(parts[0]) / parseFloat(parts[1]);
+      } else {
+        ratioVal = parseFloat(state.boardRatio) || 1.6;
+      }
+    }
     
-    // Auto-expand storyboard column to fit thumbnail
+    const thumbW = Math.round(thumbSz * ratioVal);
+    
+    // Auto-expand storyboard column to fit thumbnail exactly
     const storyboardCol = document.querySelector('.col-storyboard');
-    if (storyboardCol) storyboardCol.style.width = Math.max(68, thumbW + 12) + 'px';
+    if (storyboardCol) storyboardCol.style.width = Math.max(68, thumbW) + 'px';
 
     dom.shotBody.querySelectorAll('tr[data-id]').forEach(tr => {
       const isBlock = tr.classList.contains('block-row');
       tr.style.height = (isBlock ? Math.max(30, Math.round(rowH * 0.7)) : rowH) + 'px';
       const thumb = tr.querySelector('.storyboard-cell img, .storyboard-cell .placeholder');
       if (thumb) {
-        if (thumb.tagName === 'IMG') {
-          thumb.style.maxWidth  = thumbW + 'px';
-          thumb.style.maxHeight = thumbSz + 'px';
-        } else {
-          thumb.style.width  = thumbW + 'px';
-          thumb.style.height = thumbSz + 'px';
-        }
+        // Clear any old inline dimensions so CSS completely controls the object-fit covering
+        thumb.style.maxWidth = '';
+        thumb.style.maxHeight = '';
+        thumb.style.width = '';
+        thumb.style.height = '';
       }
     });
   }
@@ -188,6 +195,66 @@ import { onRender, render } from './events.js';
       tech: dom.toggleGridTech.checked
     };
     localStorage.setItem(LS_GRID_VIS_KEY, JSON.stringify(state.gridVisibility));
+    render();
+  }
+
+  export function loadTableVis() {
+    try {
+      const vis = localStorage.getItem(LS_TABLE_VIS_KEY);
+      if (vis) {
+        state.tableVisibility = { ...state.tableVisibility, ...JSON.parse(vis) };
+      }
+      if (dom.tcPriority) dom.tcPriority.checked = state.tableVisibility.priority;
+      if (dom.tcLocation) dom.tcLocation.checked = state.tableVisibility.location;
+      if (dom.tcDescription) dom.tcDescription.checked = state.tableVisibility.description;
+      if (dom.tcNotes) dom.tcNotes.checked = state.tableVisibility.notes;
+      if (dom.tcCharacters) dom.tcCharacters.checked = state.tableVisibility.characters;
+      if (dom.tcShotsize) dom.tcShotsize.checked = state.tableVisibility.shotsize;
+      if (dom.tcLens) dom.tcLens.checked = state.tableVisibility.lens;
+      if (dom.tcMovement) dom.tcMovement.checked = state.tableVisibility.movement;
+      if (dom.tcProps) dom.tcProps.checked = state.tableVisibility.props;
+      if (dom.tcDuration) dom.tcDuration.checked = state.tableVisibility.duration;
+      if (dom.tcCalltime) dom.tcCalltime.checked = state.tableVisibility.calltime;
+      if (dom.tcEndtime) dom.tcEndtime.checked = state.tableVisibility.endtime;
+      if (dom.tcRunning) dom.tcRunning.checked = state.tableVisibility.running;
+      applyTableVis();
+    } catch(e) { /* ignore */ }
+  }
+
+  export function saveTableVis() {
+    state.tableVisibility = {
+      priority: dom.tcPriority.checked,
+      location: dom.tcLocation.checked,
+      description: dom.tcDescription.checked,
+      notes: dom.tcNotes.checked,
+      characters: dom.tcCharacters.checked,
+      shotsize: dom.tcShotsize.checked,
+      lens: dom.tcLens.checked,
+      movement: dom.tcMovement.checked,
+      props: dom.tcProps.checked,
+      duration: dom.tcDuration.checked,
+      calltime: dom.tcCalltime.checked,
+      endtime: dom.tcEndtime.checked,
+      running: dom.tcRunning.checked
+    };
+    localStorage.setItem(LS_TABLE_VIS_KEY, JSON.stringify(state.tableVisibility));
+    applyTableVis();
+  }
+
+  export function applyTableVis() {
+    if (dom.thPriority) dom.thPriority.style.display = state.tableVisibility.priority ? '' : 'none';
+    if (dom.thLocation) dom.thLocation.style.display = state.tableVisibility.location ? '' : 'none';
+    if (dom.thDescription) dom.thDescription.style.display = state.tableVisibility.description ? '' : 'none';
+    if (dom.thNotes) dom.thNotes.style.display = state.tableVisibility.notes ? '' : 'none';
+    if (dom.thCharacters) dom.thCharacters.style.display = state.tableVisibility.characters ? '' : 'none';
+    if (dom.thShotsize) dom.thShotsize.style.display = state.tableVisibility.shotsize ? '' : 'none';
+    if (dom.thLens) dom.thLens.style.display = state.tableVisibility.lens ? '' : 'none';
+    if (dom.thMovement) dom.thMovement.style.display = state.tableVisibility.movement ? '' : 'none';
+    if (dom.thProps) dom.thProps.style.display = state.tableVisibility.props ? '' : 'none';
+    if (dom.thDuration) dom.thDuration.style.display = state.tableVisibility.duration ? '' : 'none';
+    if (dom.thCalltime) dom.thCalltime.style.display = state.tableVisibility.calltime ? '' : 'none';
+    if (dom.thEndtime) dom.thEndtime.style.display = state.tableVisibility.endtime ? '' : 'none';
+    if (dom.thRunning) dom.thRunning.style.display = state.tableVisibility.running ? '' : 'none';
     render();
   }
 
@@ -455,8 +522,9 @@ import { onRender, render } from './events.js';
   });
 
   // ── Dropdown click-to-open logic ───────────────
-  function initDropdown(dropId) {
+  function initDropdown(dropId, closeOnClick = true) {
     const drop = $(dropId);
+    if (!drop) return;
     const toggle = drop.querySelector('.dropdown-toggle');
     toggle.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -465,10 +533,15 @@ import { onRender, render } from './events.js';
       document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
       if (!isOpen) drop.classList.add('open');
     });
-    // clicking any item inside closes the dropdown
-    drop.querySelector('.dropdown-content').addEventListener('click', () => {
-      drop.classList.remove('open');
-    });
+    if (closeOnClick) {
+      drop.querySelector('.dropdown-content').addEventListener('click', () => {
+        drop.classList.remove('open');
+      });
+    } else {
+      drop.querySelector('.dropdown-content').addEventListener('click', (e) => {
+        e.stopPropagation();
+      });
+    }
   }
   initDropdown('dropNewProject');
   initDropdown('dropGroup');
@@ -669,6 +742,7 @@ import { onRender, render } from './events.js';
     clearSelection();
     updateSelectionUI();
     
+    state.scheduleDirty = true;
     render();
     requestAnimationFrame(fitTitleFont);
   }
@@ -735,6 +809,7 @@ import { onRender, render } from './events.js';
       dom.gridWrap.classList.remove('hidden');
       dom.gridWrap.style.display = '';
       dom.gridSettingsBar.style.display = 'flex';
+      if (dom.listSettingsBar) dom.listSettingsBar.style.display = 'none';
       renderGrid();
     } else {
       dom.gridWrap.classList.add('hidden');
@@ -742,6 +817,7 @@ import { onRender, render } from './events.js';
       dom.tableWrap.classList.remove('hidden');
       dom.tableWrap.style.display = '';
       dom.gridSettingsBar.style.display = 'none';
+      if (dom.listSettingsBar) dom.listSettingsBar.style.display = 'flex';
       renderTable();
     }
     applyPresetLayout();
@@ -751,9 +827,18 @@ import { onRender, render } from './events.js';
   // ── Init ───────────────────────────────────────
   loadLayout();
   loadGridVis();
+  loadTableVis();
   
   [dom.toggleGridHeader, dom.toggleGridLocation, dom.toggleGridSchedule, dom.toggleGridDescription, dom.toggleGridCastProps, dom.toggleGridTech].forEach(t => {
     if (t) t.addEventListener('change', saveGridVis);
+  });
+  
+  [
+    dom.tcPriority, dom.tcLocation, dom.tcDescription, dom.tcNotes, dom.tcCharacters,
+    dom.tcShotsize, dom.tcLens, dom.tcMovement, dom.tcProps, dom.tcDuration,
+    dom.tcCalltime, dom.tcEndtime, dom.tcRunning
+  ].forEach(t => {
+    if (t) t.addEventListener('change', saveTableVis);
   });
   const loadedRatio = localStorage.getItem(LS_RATIO_KEY);
   if (loadedRatio) state.boardRatio = loadedRatio;
