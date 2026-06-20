@@ -1,6 +1,6 @@
-import { dom, $ } from './dom.js';
+import { dom, $, customPrompt } from './dom.js';
 import { ICON_DUP, ICON_EXP, ICON_DEL } from './icons.js';
-import { state, PRESETS, createShot, createBlock, LS_KEY, LS_TITLE_KEY, LS_PROJECTS_KEY, LS_LAST_PROJ_KEY, LS_THEME_KEY, LS_PRESET_KEY, LS_RATIO_KEY, LS_VIEW_MODE_KEY, LS_GRID_VIS_KEY, LS_TABLE_VIS_KEY, LS_SYNC_CODE_KEY, uid, GROUP_MODES, clearSelection, getNextShotNumber, setShots } from './state.js';
+import { state, PRESETS, createShot, createBlock, LS_KEY, LS_TITLE_KEY, LS_PROJECTS_KEY, LS_LAST_PROJ_KEY, LS_THEME_KEY, LS_PRESET_KEY, LS_RATIO_KEY, LS_VIEW_MODE_KEY, LS_GRID_VIS_KEY, LS_TABLE_VIS_KEY, LS_SYNC_CODE_KEY, LS_LIST_PRESETS_KEY, uid, GROUP_MODES, clearSelection, getNextShotNumber, setShots } from './state.js';
 import { esc } from './utils.js';
 import { cascadeSchedule, formatDuration, formatOverrun, parseDuration, formatTime } from './schedule.js';
 import { renderTable, renderGrid, hideContextMenu, initTableDelegation } from './render-table.js';
@@ -13,6 +13,7 @@ import { initDrag, initTouchDrag, reorderShots } from './drag-drop.js';
 import { initBulkActions, updateSelectionUI } from './bulk-actions.js';
 import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
 import { save, saveProjects, migrateLegacyData } from './storage.js';
+import { initTooltips } from './tooltip.js';
 import { onRender, render } from './events.js';
 
 // ── Title Auto-Resize ──────────────────────────
@@ -176,6 +177,22 @@ export function loadLayout() {
   } catch (e) { /* ignore */ }
 }
 
+export function updateGridAllState() {
+  if (!dom.toggleGridAll) return;
+  const toggles = [
+    dom.toggleGridHeader,
+    dom.toggleGridLocation,
+    dom.toggleGridSchedule,
+    dom.toggleGridDescription,
+    dom.toggleGridCastProps,
+    dom.toggleGridTech
+  ];
+  const allChecked = toggles.every(t => !t || t.checked);
+  const someChecked = toggles.some(t => t && t.checked);
+  dom.toggleGridAll.checked = allChecked;
+  dom.toggleGridAll.indeterminate = someChecked && !allChecked;
+}
+
 export function loadGridVis() {
   try {
     const vis = localStorage.getItem(LS_GRID_VIS_KEY);
@@ -188,6 +205,7 @@ export function loadGridVis() {
     if (dom.toggleGridDescription) dom.toggleGridDescription.checked = state.gridVisibility.description;
     if (dom.toggleGridCastProps) dom.toggleGridCastProps.checked = state.gridVisibility.castProps;
     if (dom.toggleGridTech) dom.toggleGridTech.checked = state.gridVisibility.tech;
+    updateGridAllState();
   } catch (e) { /* ignore */ }
 }
 
@@ -201,6 +219,7 @@ export function saveGridVis() {
     tech: dom.toggleGridTech.checked
   };
   localStorage.setItem(LS_GRID_VIS_KEY, JSON.stringify(state.gridVisibility));
+  updateGridAllState();
   render();
 }
 
@@ -245,6 +264,56 @@ export function saveTableVis() {
   };
   localStorage.setItem(LS_TABLE_VIS_KEY, JSON.stringify(state.tableVisibility));
   applyTableVis();
+}
+
+export function loadListPresets() {
+  try {
+    const raw = localStorage.getItem(LS_LIST_PRESETS_KEY);
+    if (raw) state.listPresets = JSON.parse(raw);
+    else state.listPresets = {};
+  } catch (e) {
+    state.listPresets = {};
+  }
+}
+
+export function saveListPresets() {
+  localStorage.setItem(LS_LIST_PRESETS_KEY, JSON.stringify(state.listPresets));
+}
+
+export function renderListPresets() {
+  if (!dom.customListPresetsContainer) return;
+  dom.customListPresetsContainer.innerHTML = '';
+  for (const presetName of Object.keys(state.listPresets)) {
+    const btn = document.createElement('button');
+    btn.className = 'btn';
+    btn.style.cssText = 'border: none; background: transparent; width: 100%; justify-content: space-between; padding: 6px 12px;';
+    
+    const label = document.createElement('span');
+    label.textContent = presetName;
+    label.style.pointerEvents = 'none';
+    
+    const del = document.createElement('span');
+    del.innerHTML = '×';
+    del.style.cssText = 'color: var(--text-2); pointer-events: auto; padding: 0 4px;';
+    del.title = 'Delete preset';
+    del.onclick = (e) => {
+      e.stopPropagation();
+      delete state.listPresets[presetName];
+      saveListPresets();
+      renderListPresets();
+    };
+    
+    btn.appendChild(label);
+    btn.appendChild(del);
+    
+    btn.onclick = () => {
+      applyListPreset(presetName);
+      const drop = dom.customListPresetsContainer.closest('.dropdown');
+      if (drop) drop.classList.remove('open');
+    };
+    
+    dom.customListPresetsContainer.appendChild(btn);
+  }
 }
 
 export function applyTableVis() {
@@ -587,6 +656,7 @@ function initDropdown(dropId, closeOnClick = true) {
 initDropdown('dropNewProject');
 initDropdown('dropGroup');
 initDropdown('dropSettings');
+initDropdown('dropListColumns');
 // click anywhere outside closes all dropdowns
 document.addEventListener('click', () => {
   document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
@@ -869,10 +939,30 @@ onRender(renderAll);
 loadLayout();
 loadGridVis();
 loadTableVis();
+loadListPresets();
+renderListPresets();
+initTooltips();
 
 [dom.toggleGridHeader, dom.toggleGridLocation, dom.toggleGridSchedule, dom.toggleGridDescription, dom.toggleGridCastProps, dom.toggleGridTech].forEach(t => {
   if (t) t.addEventListener('change', saveGridVis);
 });
+
+if (dom.toggleGridAll) {
+  dom.toggleGridAll.addEventListener('change', (e) => {
+    const isChecked = e.target.checked;
+    [
+      dom.toggleGridHeader,
+      dom.toggleGridLocation,
+      dom.toggleGridSchedule,
+      dom.toggleGridDescription,
+      dom.toggleGridCastProps,
+      dom.toggleGridTech
+    ].forEach(t => {
+      if (t) t.checked = isChecked;
+    });
+    saveGridVis();
+  });
+}
 
 [
   dom.tcPriority, dom.tcLocation, dom.tcDescription, dom.tcNotes, dom.tcCharacters,
@@ -881,6 +971,67 @@ loadTableVis();
 ].forEach(t => {
   if (t) t.addEventListener('change', saveTableVis);
 });
+
+function applyListPreset(preset) {
+  const allToggles = [
+    dom.tcPriority, dom.tcLocation, dom.tcDescription, dom.tcNotes, dom.tcCharacters,
+    dom.tcShotsize, dom.tcLens, dom.tcMovement, dom.tcProps, dom.tcDuration,
+    dom.tcCalltime, dom.tcEndtime, dom.tcRunning
+  ];
+  
+  if (state.listPresets && state.listPresets[preset]) {
+    const savedState = state.listPresets[preset];
+    allToggles.forEach(t => {
+      if (t) {
+        const key = t.id.replace('tc-', '');
+        t.checked = !!savedState[key];
+      }
+    });
+    saveTableVis();
+    return;
+  }
+  
+  let toCheck = [];
+  if (preset === 'all') {
+    toCheck = allToggles;
+  }
+
+  allToggles.forEach(t => {
+    if (t) t.checked = toCheck.includes(t);
+  });
+  saveTableVis();
+}
+
+if (dom.btnPresetListAll) dom.btnPresetListAll.addEventListener('click', () => applyListPreset('all'));
+
+if (dom.btnAddListPreset) {
+  dom.btnAddListPreset.addEventListener('click', async () => {
+    const drop = dom.btnAddListPreset.closest('.dropdown');
+    if (drop) drop.classList.remove('open');
+    
+    const name = await customPrompt('Name your custom preset:');
+    if (!name || !name.trim()) return;
+    
+    const presetName = name.trim();
+    const currentState = {};
+    const allToggles = [
+      dom.tcPriority, dom.tcLocation, dom.tcDescription, dom.tcNotes, dom.tcCharacters,
+      dom.tcShotsize, dom.tcLens, dom.tcMovement, dom.tcProps, dom.tcDuration,
+      dom.tcCalltime, dom.tcEndtime, dom.tcRunning
+    ];
+    allToggles.forEach(t => {
+      if (t) {
+        const key = t.id.replace('tc-', '');
+        currentState[key] = t.checked;
+      }
+    });
+    
+    state.listPresets[presetName] = currentState;
+    saveListPresets();
+    renderListPresets();
+  });
+}
+
 const loadedRatio = localStorage.getItem(LS_RATIO_KEY);
 if (loadedRatio) state.boardRatio = loadedRatio;
 applyBoardRatio();

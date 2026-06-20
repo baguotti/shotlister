@@ -13,6 +13,7 @@ export const state = {
     shotsize: true, lens: true, movement: true, props: true, duration: true,
     calltime: true, endtime: true, running: true
   },
+  listPresets: {},
   syncPasscode: null, syncStatus: 'offline' // 'offline' | 'syncing' | 'synced' | 'error'
 };
 
@@ -45,6 +46,7 @@ export function clearSelection() {
   export const LS_GRID_VIS_KEY = 'sl-grid-vis';
   export const LS_TABLE_VIS_KEY = 'sl-table-vis';
   export const LS_SYNC_CODE_KEY = 'sl-sync-code';
+export const LS_LIST_PRESETS_KEY = 'sl-list-presets';
   
   export const LS_AC_CHARS = 'sl-ac-characters';
   export const LS_AC_LOCS = 'sl-ac-location';

@@ -1758,3 +1758,29 @@ body.preset-XS .storyboard-cell .sb-thumb-wrap::after {
 body.view-mode-grid button[data-preset="XS"] {
   display: none !important;
 }
+
+/* Custom Fast Tooltip */
+.custom-tooltip {
+  position: fixed;
+  background: var(--bg-3, #333);
+  color: var(--text-0, #fff);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  pointer-events: none;
+  z-index: 99999;
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-50%, 0) scale(0.95);
+  transition: opacity 0.1s ease-out, transform 0.1s ease-out, visibility 0s linear 0.1s;
+  white-space: nowrap;
+}
+
+.custom-tooltip.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0) scale(1);
+  transition-delay: 0.3s;
+}

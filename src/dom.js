@@ -12,6 +12,7 @@ export const dom = {
   listSettingsBar: $('listSettingsBar'),
   
   // Grid Toggles
+  toggleGridAll: $('toggleGridAll'),
   toggleGridHeader: $('toggleGridHeader'),
   toggleGridLocation: $('toggleGridLocation'),
   toggleGridSchedule: $('toggleGridSchedule'),
@@ -20,6 +21,9 @@ export const dom = {
   toggleGridTech: $('toggleGridTech'),
   
   // Table Toggles
+  btnPresetListAll: $('btnPresetListAll'),
+  btnAddListPreset: $('btnAddListPreset'),
+  customListPresetsContainer: $('customListPresetsContainer'),
   tcPriority: $('tc-priority'),
   tcLocation: $('tc-location'),
   tcDescription: $('tc-description'),
