@@ -1727,3 +1727,34 @@ body.zen-mode .list-settings-bar,
 body.zen-mode .grid-settings-bar {
   display: none !important;
 }
+
+/* XS Preset (Text Only - List View) */
+body.preset-XS .storyboard-cell img {
+  display: none !important;
+}
+
+body.preset-XS .storyboard-cell .placeholder {
+  display: none !important;
+}
+
+body.preset-XS .storyboard-cell .sb-thumb-wrap {
+  width: 18px !important;
+  height: 14px !important;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  margin: 0 auto;
+}
+
+body.preset-XS .storyboard-cell:hover .sb-thumb-wrap {
+  background: var(--bg-3);
+  border-color: var(--text-2);
+}
+
+body.preset-XS .storyboard-cell .sb-thumb-wrap::after {
+  display: none !important;
+}
+
+body.view-mode-grid button[data-preset="XS"] {
+  display: none !important;
+}

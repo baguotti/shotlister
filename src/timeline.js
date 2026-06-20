@@ -57,7 +57,7 @@ import { parseDuration, formatDuration, formatTime } from './schedule.js';
         }
         const defaultBg = s.kind === 'block' ? 'var(--bg-2)' : '';
         const bg = group ? group.border : defaultBg;
-        return `<div class="tl-block${s.kind==='block' ? ' block-type-'+s.blockType : ''}" data-id="${s.id}" style="width:${pct}%;${bg?'background:'+bg+' !important':''}">` +
+        return `<div class="tl-block${s.kind==='block' ? ' block-type-'+s.blockType : ''}" data-id="${s.id}" style="width:${pct}%;${bg?'background:'+bg+' !important':''}" title="${title}">` +
         `<span class="tl-tooltip">${title}</span></div>`;
       }).join('');
     } else {
@@ -75,7 +75,7 @@ import { parseDuration, formatDuration, formatTime } from './schedule.js';
         }
         const defaultBg = s.kind === 'block' ? (s.blockType==='PREP'?'var(--orange)':s.blockType==='BREAK'?'var(--green)':s.blockType==='LUNCH'?'var(--blue)':s.blockType==='TRAVEL'?'#a855f7':'var(--text-2)') : '';
         const bg = group ? group.border : defaultBg;
-        return `<div class="tl-block" data-id="${s.id}" style="width:${Math.max(pct, 0.5)}%;${bg?'background:'+bg+' !important':''}">` +
+        return `<div class="tl-block" data-id="${s.id}" style="width:${Math.max(pct, 0.5)}%;${bg?'background:'+bg+' !important':''}" title="${title}">` +
           `<span class="tl-tooltip">${title}</span></div>`;
       }).join('');
     }

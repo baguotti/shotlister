@@ -56,6 +56,7 @@ export function clearSelection() {
   // Presets: proportional scale factors (M = 1.0 baseline).
   // Actual px values are computed live from the container height.
   export const PRESETS = {
+    XS: { scale: 0.5 },
     S:  { scale: 0.72 },
     M:  { scale: 1.0  },
     L:  { scale: 1.55 },

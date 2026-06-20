@@ -19,7 +19,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="stylesheet" href="/src/styles.css">
 </head>
-<body>
+<body class="preset-M">
 
 <div id="app">
 
@@ -27,16 +27,16 @@
   <div id="homeView" style="display:none; flex:1; overflow-y:auto; padding: 32px 40px; flex-direction:column; background:var(--bg-0);">
     <div class="home-container">
       <div class="home-header">
-        <h1 class="home-title">Shotlister Projects <span class="home-version">BETA 0.1.5</span></h1>
+        <h1 class="home-title">Shotlister Projects <span class="home-version">BETA 0.1.6</span></h1>
         <div class="home-actions">
-          <button class="btn btn-sync" id="btnSyncSettingsHome" aria-label="Cloud Sync Settings"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; display: inline-block; vertical-align: middle; position: relative; top: -1px;"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg> <span id="syncStatusTextHome" class="hide-mobile">Offline Mode</span></button>
+          <button class="btn btn-sync" id="btnSyncSettingsHome" aria-label="Cloud Sync Settings" title="Cloud Sync Settings"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; display: inline-block; vertical-align: middle; position: relative; top: -1px;"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg> <span id="syncStatusTextHome" class="hide-mobile">Offline Mode</span></button>
           <button class="btn" id="btnRefreshHome" title="Refresh App" onclick="window.location.reload()" aria-label="Refresh App" style="padding: 6px 8px;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
-          <button class="btn btn-import" id="btnImportHome">↓ Import Project</button>
+          <button class="btn btn-import" id="btnImportHome" title="Import Project">↓ Import Project</button>
           <div class="dropdown" id="dropNewProject">
-            <button class="btn btn-primary dropdown-toggle" id="btnNewProject">+ New Project ▾</button>
+            <button class="btn btn-primary dropdown-toggle" id="btnNewProject" title="New Project">+ New Project ▾</button>
             <div class="dropdown-content">
-              <button class="btn" id="btnNewBlank" style="border: none; background: transparent; width: 100%; justify-content: flex-start; padding: 6px 12px;">Blank</button>
-              <button class="btn" id="btnNewTemplate" style="border: none; background: transparent; width: 100%; justify-content: flex-start; padding: 6px 12px;">Template</button>
+              <button class="btn" id="btnNewBlank" title="Blank Project" style="border: none; background: transparent; width: 100%; justify-content: flex-start; padding: 6px 12px;">Blank</button>
+              <button class="btn" id="btnNewTemplate" title="Template Project" style="border: none; background: transparent; width: 100%; justify-content: flex-start; padding: 6px 12px;">Template</button>
             </div>
           </div>
           <input type="file" id="importHomeInput" accept=".json" style="display:none;">
@@ -62,10 +62,11 @@
       </button>
       <span class="project-title" id="projectTitle" contenteditable="true" spellcheck="false" role="heading" aria-level="1"></span>
       <div class="spacer"></div>
-    <button class="btn" id="btnSyncSettingsEditor" aria-label="Cloud Sync Settings" style="display:flex; align-items:center; gap:4px; margin-right:8px; font-size:11px;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg> <span id="syncStatusTextEditor">Offline</span></button>
-    <button class="btn" id="btnRefreshEditor" title="Refresh App" onclick="window.location.reload()" aria-label="Refresh App" style="display:flex; align-items:center; margin-right:8px; padding: 6px 8px;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
-    <button class="btn" id="btnFullscreen" title="Fullscreen" aria-label="Toggle Fullscreen" style="display:flex; align-items:center; margin-right:12px; padding: 6px 8px;"><svg id="iconFullscreen" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg></button>
+    <button class="btn" id="btnSyncSettingsEditor" aria-label="Cloud Sync Settings" title="Cloud Sync Settings" style="display:flex; align-items:center; gap:4px; font-size:11px;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg> <span id="syncStatusTextEditor">Offline</span></button>
+    <button class="btn" id="btnRefreshEditor" title="Refresh App" onclick="window.location.reload()" aria-label="Refresh App" style="display:flex; align-items:center; padding: 6px 8px;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
+    <button class="btn" id="btnFullscreen" title="Fullscreen" aria-label="Toggle Fullscreen" style="display:flex; align-items:center; padding: 6px 8px;"><svg id="iconFullscreen" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg></button>
     <div class="preset-ctrl" id="presetCtrl">
+      <button data-preset="XS" title="Text Only (Extra Small)" aria-label="Extra Small Size">XS</button>
       <button data-preset="S" title="Compact" aria-label="Compact Size">S</button>
       <button data-preset="M" title="Default" class="active" aria-label="Default Size">M</button>
       <button data-preset="L" title="Large" aria-label="Large Size">L</button>
@@ -73,14 +74,14 @@
     </div>
     <button class="btn" id="btnViewMode" title="Toggle Grid/List View" aria-label="Toggle Grid or List View">▦ Grid</button>
     <div class="dropdown" id="dropGroup">
-      <button class="btn dropdown-toggle" id="btnDropGroup" aria-label="Group by Options">⊞ Group ▾</button>
+      <button class="btn dropdown-toggle" id="btnDropGroup" aria-label="Group by Options" title="Group by Options">⊞ Group ▾</button>
       <div class="dropdown-content">
-        <button class="btn" data-group="none">None</button>
-        <button class="btn" data-group="scene">By Scene</button>
-        <button class="btn" data-group="location">By Location</button>
-        <button class="btn" data-group="movement">By Movement</button>
-        <button class="btn" data-group="characters">By Cast</button>
-        <button class="btn" data-group="shotSize">By Shot Size</button>
+        <button class="btn" data-group="none" title="No Grouping">None</button>
+        <button class="btn" data-group="scene" title="Group by Scene">By Scene</button>
+        <button class="btn" data-group="location" title="Group by Location">By Location</button>
+        <button class="btn" data-group="movement" title="Group by Movement">By Movement</button>
+        <button class="btn" data-group="characters" title="Group by Cast">By Cast</button>
+        <button class="btn" data-group="shotSize" title="Group by Shot Size">By Shot Size</button>
       </div>
     </div>
 
@@ -89,19 +90,19 @@
         <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display: block;"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
       </button>
       <div class="dropdown-content">
-        <button class="btn" id="btnCustomEntries" style="border: none; background: transparent; width: 100%; justify-content: flex-start; padding: 6px 12px;">
+        <button class="btn" id="btnCustomEntries" title="Custom Entries" style="border: none; background: transparent; width: 100%; justify-content: flex-start; padding: 6px 12px;">
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; display: block;"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="2" y1="14" x2="6" y2="14"/><line x1="10" y1="8" x2="14" y2="8"/><line x1="18" y1="16" x2="22" y2="16"/></svg>
           Custom Entries
         </button>
-        <button class="btn" id="btnImport" style="border: none; background: transparent; width: 100%; justify-content: flex-start; padding: 6px 12px;">
+        <button class="btn" id="btnImport" title="Import" style="border: none; background: transparent; width: 100%; justify-content: flex-start; padding: 6px 12px;">
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; display: block;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           Import
         </button>
-        <button class="btn" id="btnExport" style="border: none; background: transparent; width: 100%; justify-content: flex-start; padding: 6px 12px;">
+        <button class="btn" id="btnExport" title="Export" style="border: none; background: transparent; width: 100%; justify-content: flex-start; padding: 6px 12px;">
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; display: block;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Export
         </button>
-        <button class="btn" id="btnPrint" style="border: none; background: transparent; width: 100%; justify-content: flex-start; padding: 6px 12px;">
+        <button class="btn" id="btnPrint" title="Print" style="border: none; background: transparent; width: 100%; justify-content: flex-start; padding: 6px 12px;">
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; display: block;"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
           Print
         </button>
@@ -214,21 +215,21 @@
     <div class="stat-sep"></div>
     <div class="stat">Wrap: <span class="stat-val" id="statWrap">--:--</span></div>
     <div class="stat">Overrun: <span class="stat-val" id="statOverrun">00:00</span></div>
-    <button class="add-row-btn active" id="btnToggleSummary" style="margin-left:auto; background:transparent; border-color:transparent; color:var(--text-1);">∑ Summary</button>
+    <button class="add-row-btn active" id="btnToggleSummary" title="Toggle Summary" style="margin-left:auto; background:transparent; border-color:transparent; color:var(--text-1);">∑ Summary</button>
     <div class="spacer"></div>
-    <button class="add-row-btn" id="btnAddBlock" style="margin-right:8px; background:var(--bg-2); border-color:var(--border); color:var(--text-1);">+ Add Block</button>
-    <button class="add-row-btn" id="btnAddRow">+ Add Shot</button>
+    <button class="add-row-btn" id="btnAddBlock" title="Add Block" style="margin-right:8px; background:var(--bg-2); border-color:var(--border); color:var(--text-1);">+ Add Block</button>
+    <button class="add-row-btn" id="btnAddRow" title="Add Shot">+ Add Shot</button>
   </div>
 
 </div> <!-- /editorView -->
 
 <!-- Context Menu -->
 <div class="context-menu" id="contextMenu">
-  <button id="cmDuplicate">Duplicate</button>
-  <button id="cmInsertAbove">Insert Above</button>
-  <button id="cmInsertBelow">Insert Below</button>
+  <button id="cmDuplicate" title="Duplicate">Duplicate</button>
+  <button id="cmInsertAbove" title="Insert Above">Insert Above</button>
+  <button id="cmInsertBelow" title="Insert Below">Insert Below</button>
   <div class="divider"></div>
-  <button id="cmDelete" class="danger">Delete</button>
+  <button id="cmDelete" class="danger" title="Delete">Delete</button>
 </div>
 
 <!-- Storyboard Lightbox -->
@@ -236,8 +237,8 @@
   <div class="lb-backdrop" id="lbBackdrop"></div>
   <div class="lb-header">
     <div class="lb-actions">
-      <button class="lb-btn lb-btn-replace" id="lbReplace">Replace</button>
-      <button class="lb-btn lb-btn-delete" id="lbDelete">Delete</button>
+      <button class="lb-btn lb-btn-replace" id="lbReplace" title="Replace Image">Replace</button>
+      <button class="lb-btn lb-btn-delete" id="lbDelete" title="Delete Image">Delete</button>
     </div>
     <button class="lb-close" id="lbClose" title="Close (Esc)" aria-label="Close Lightbox">✕</button>
   </div>
@@ -262,8 +263,8 @@
 <div class="bulk-action-bar" id="bulkActionBar">
   <span id="bulkCount">0 selected</span>
   <div class="bulk-divider"></div>
-  <button id="btnBulkDuplicate" class="btn">Duplicate</button>
-  <button id="btnBulkDelete" class="btn danger">Delete</button>
+  <button id="btnBulkDuplicate" class="btn" title="Duplicate">Duplicate</button>
+  <button id="btnBulkDelete" class="btn danger" title="Delete">Delete</button>
   <button id="btnBulkClear" class="btn close" title="Clear Selection" aria-label="Clear Selection">✕</button>
 </div>
 
@@ -279,8 +280,8 @@
     <h3 id="customPromptTitle">Enter Custom Value</h3>
     <input type="text" id="customPromptInput" autocomplete="off">
     <div class="modal-actions">
-      <button id="customPromptCancel" class="btn">Cancel</button>
-      <button id="customPromptSubmit" class="btn primary">Submit</button>
+      <button id="customPromptCancel" class="btn" title="Cancel">Cancel</button>
+      <button id="customPromptSubmit" class="btn primary" title="Submit">Submit</button>
     </div>
   </div>
 </dialog>
@@ -297,10 +298,10 @@
       <input type="password" id="syncPasscodeInput" placeholder="Enter private passcode..." autocomplete="off" style="width: 100%; box-sizing: border-box;">
     </div>
     <div class="modal-actions" style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
-      <button id="syncSubmit" class="btn primary" style="width: 100%; justify-content: center;">Connect & Sync</button>
+      <button id="syncSubmit" class="btn primary" style="width: 100%; justify-content: center;" title="Connect & Sync">Connect & Sync</button>
       <button id="syncForceImages" class="btn" style="display: none; width: 100%; justify-content: center;" title="Manually push local images to the cloud">Force Image Upload</button>
-      <button id="syncDisconnect" class="btn danger" style="display: none; width: 100%; justify-content: center;">Disconnect</button>
-      <button id="syncCancel" class="btn" style="width: 100%; justify-content: center;">Cancel</button>
+      <button id="syncDisconnect" class="btn danger" style="display: none; width: 100%; justify-content: center;" title="Disconnect">Disconnect</button>
+      <button id="syncCancel" class="btn" style="width: 100%; justify-content: center;" title="Cancel">Cancel</button>
     </div>
   </div>
 </dialog>
