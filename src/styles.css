@@ -414,7 +414,7 @@ thead th {
 }
 
 /* Column widths */
-.col-drag { width: 28px; }
+.col-drag { width: 16px; padding-left: 4px; padding-right: 0; }
 .col-storyboard { width: 220px; transition: width 0.15s; }
 .col-num, .col-shotnum { width: 40px; }
 .col-priority { width: 40px; }
@@ -1483,8 +1483,9 @@ input[type="file"].sr-only {
 
 /* Selection UI */
 .col-select {
-  width: 24px;
+  width: 18px;
   text-align: center;
+  padding: 0 4px;
 }
 
 
@@ -1716,4 +1717,13 @@ input[type="file"].sr-only {
   font-weight: bold;
   border-bottom: 1px solid var(--border);
   margin-bottom: 8px;
+}
+
+/* Zen Mode (Fullscreen) */
+body.zen-mode #projectTitle,
+body.zen-mode #timelineBar,
+body.zen-mode #footer,
+body.zen-mode .list-settings-bar,
+body.zen-mode .grid-settings-bar {
+  display: none !important;
 }
