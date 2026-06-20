@@ -7,7 +7,7 @@ import { updateStats, applyPresetLayout } from './main.js';
 import { render } from './events.js';
 import { save } from './storage.js';
 import { esc } from './utils.js';
-import { initDrag, initTouchDrag } from './drag-drop.js';
+import { initDrag, initTouchDrag, initTouchSwipe } from './drag-drop.js';
 import { applyBulkEdit, updateSelectionUI } from './bulk-actions.js';
 import { getGroupInfo } from './grouping.js';
 import { putImage, getImage } from './db.js';
@@ -16,6 +16,9 @@ import { syncRequest } from './sync.js';
   export function renderTable() {
     const filtered = state.shots;
     
+    function sortArchivedToBottom(arr) {
+      return arr;
+    }
 
     let html = '';
     let cumulative = 0;
@@ -49,7 +52,8 @@ import { syncRequest } from './sync.js';
 
         html += `<tr class="location-group"><td colspan="${totalColSpan + 1}">${icon}${esc(key)}</td></tr>`;
         let groupCum = 0;
-        groups[key].forEach(s => {
+        const sortedGroup = sortArchivedToBottom(groups[key]);
+        sortedGroup.forEach(s => {
           const dur = parseDuration(s.duration);
           if (dur > 0) { cumulative += dur; groupCum += dur; }
           html += s.kind === 'block' ? buildBlockRow(s, cumulative) : buildRow(s, cumulative);
@@ -78,6 +82,20 @@ import { syncRequest } from './sync.js';
         </tr>`;
       });
     } else {
+      let tempFiltered = [];
+      let currentChunk = [];
+      let currentChunkScene = null;
+      filtered.forEach(s => {
+        const sceneNum = s.num ? String(s.num).trim() : '';
+        if (sceneNum !== currentChunkScene) {
+          if (currentChunk.length > 0) tempFiltered.push(...sortArchivedToBottom(currentChunk));
+          currentChunkScene = sceneNum;
+          currentChunk = [];
+        }
+        currentChunk.push(s);
+      });
+      if (currentChunk.length > 0) tempFiltered.push(...sortArchivedToBottom(currentChunk));
+
       let currentScene = null;
       let sceneShots = [];
 
@@ -132,7 +150,7 @@ import { syncRequest } from './sync.js';
         }
       };
 
-      filtered.forEach(s => {
+      tempFiltered.forEach(s => {
         const sceneNum = s.num ? String(s.num).trim() : '';
         if (s.kind === 'shot' || sceneNum !== '') {
           if (sceneNum !== currentScene) {
@@ -315,7 +333,8 @@ import { syncRequest } from './sync.js';
       ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute; right:4px; pointer-events:none; opacity:0.8;" title="Pinned Call Time"><line x1="12" y1="17" x2="12" y2="22"></line><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"></path></svg>'
       : '';
 
-    return `<tr data-id="${s.id}" draggable="false" style="${rowStyle}">
+    const trClass = s.archived ? 'archived' : '';
+    return `<tr data-id="${s.id}" draggable="false" style="${rowStyle}" class="${trClass}">
       <td class="drag-handle" title="Drag to reorder" style="${borderStyle}">&#x2807;</td>
       <td class="col-select"><input type="checkbox" class="row-checkbox" data-id="${s.id}" ${state.selectedIds.has(s.id) ? 'checked' : ''}></td>
       <td class="storyboard-cell" data-id="${s.id}">${storyboardContent}</td>
@@ -364,7 +383,8 @@ import { syncRequest } from './sync.js';
       ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position:absolute; right:4px; pointer-events:none; opacity:0.8;" title="Pinned Call Time"><line x1="12" y1="17" x2="12" y2="22"></line><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"></path></svg>'
       : '';
 
-    return `<tr class="block-row block-type-${s.blockType}" data-id="${s.id}" draggable="false" style="${rowStyle}">
+    const trClass = `block-row block-type-${s.blockType}${s.archived ? ' archived' : ''}`;
+    return `<tr class="${trClass}" data-id="${s.id}" draggable="false" style="${rowStyle}">
       <td class="drag-handle" title="Drag to reorder" style="${borderStyle}">&#x2807;</td>
       <td class="col-select"><input type="checkbox" class="row-checkbox" data-id="${s.id}" ${state.selectedIds.has(s.id) ? 'checked' : ''}></td>
       <td class="storyboard-cell"></td>
@@ -707,7 +727,14 @@ import { syncRequest } from './sync.js';
 
     bind('touchstart', e => {
       const handle = e.target.closest('.drag-handle');
-      if (handle) initTouchDrag(e, handle);
+      if (handle) {
+        initTouchDrag(e, handle);
+      } else {
+        const row = e.target.closest('tr[data-id], .grid-card[data-id]');
+        if (row && !e.target.closest('.actions-btn') && !e.target.closest('.storyboard-cell') && !e.target.closest('input[type="checkbox"]')) {
+          initTouchSwipe(e, row);
+        }
+      }
     }, { passive: false });
   }
 
@@ -755,6 +782,10 @@ import { syncRequest } from './sync.js';
 
   // ── Context Menu ───────────────────────────────
   export function showContextMenu(x, y) {
+    const shot = getShot(state.contextRowId);
+    if (shot) {
+      document.getElementById('cmArchive').textContent = shot.archived ? 'Unmark as shot' : 'Mark as shot';
+    }
     dom.contextMenu.style.left = Math.min(x, window.innerWidth - 160) + 'px';
     dom.contextMenu.style.top = Math.min(y, window.innerHeight - 140) + 'px';
     dom.contextMenu.classList.add('visible');
@@ -772,6 +803,15 @@ import { syncRequest } from './sync.js';
       e.preventDefault();
       state.contextRowId = row.dataset.id;
       showContextMenu(e.clientX, e.clientY);
+    }
+  });
+
+  $('cmArchive').addEventListener('click', () => {
+    if (!state.contextRowId) return;
+    const shot = getShot(state.contextRowId);
+    if (shot) {
+      shot.archived = !shot.archived;
+      save(); render();
     }
   });
 
@@ -825,6 +865,11 @@ import { syncRequest } from './sync.js';
   // ── Render: Grid ───────────────────────────────
   export function renderGrid() {
     const filtered = state.shots.filter(s => s.kind !== 'block');
+    
+    function sortArchivedToBottom(arr) {
+      return arr;
+    }
+
     let html = '';
     let cumulative = 0;
 
@@ -841,14 +886,29 @@ import { syncRequest } from './sync.js';
         const { icon } = getGroupInfo(groups[key][0] || {});
 
         html += `<div class="grid-group-header">${icon}${esc(key)}</div>`;
-        groups[key].forEach(s => {
+        const sortedGroup = sortArchivedToBottom(groups[key]);
+        sortedGroup.forEach(s => {
           const dur = parseDuration(s.duration);
           if (dur > 0) cumulative += dur;
           html += s.kind === 'block' ? buildGridBlockCard(s, cumulative) : buildGridCard(s, cumulative);
         });
       });
     } else {
+      let tempFiltered = [];
+      let currentChunk = [];
+      let currentChunkScene = null;
       filtered.forEach(s => {
+        const sceneNum = s.num ? String(s.num).trim() : '';
+        if (sceneNum !== currentChunkScene) {
+          if (currentChunk.length > 0) tempFiltered.push(...sortArchivedToBottom(currentChunk));
+          currentChunkScene = sceneNum;
+          currentChunk = [];
+        }
+        currentChunk.push(s);
+      });
+      if (currentChunk.length > 0) tempFiltered.push(...sortArchivedToBottom(currentChunk));
+
+      tempFiltered.forEach(s => {
         const dur = parseDuration(s.duration);
         if (dur > 0) cumulative += dur;
         html += s.kind === 'block' ? buildGridBlockCard(s, cumulative) : buildGridCard(s, cumulative);
@@ -936,7 +996,8 @@ import { syncRequest } from './sync.js';
 
       let infoHTML = (topRowHTML || descHTML || castPropsHTML || techHTML) ? `<div class="gc-info">${topRowHTML}${descHTML}${castPropsHTML}${techHTML}</div>` : '';
 
-    return `<div class="grid-card${isSelected}" data-id="${s.id}">
+    const cardClass = `grid-card${isSelected}${s.archived ? ' archived' : ''}`;
+    return `<div class="${cardClass}" data-id="${s.id}">
       <div class="col-actions" style="position: absolute; top: 0; right: 0; z-index: 10;"><button class="actions-btn" title="Actions" aria-label="Shot Actions" style="background: transparent; border: none; font-size: 18px; color: var(--text-0); cursor: pointer; padding: 4px;">&#x22EF;</button></div>
       ${headerHTML}
       <div class="gc-board-wrap storyboard-cell" data-id="${s.id}" style="cursor: pointer; aspect-ratio: ${ratioVal};">
@@ -958,7 +1019,8 @@ import { syncRequest } from './sync.js';
 
     const isSelected = state.selectedIds.has(s.id) ? ' selected' : '';
 
-    return `<div class="grid-card block-row block-type-${s.blockType} ${isSelected}" data-id="${s.id}" style="${pillStyle} grid-column: 1 / -1; flex-direction: row; align-items: center; padding: 12px; gap: 12px;">
+    const cardClass = `grid-card block-row block-type-${s.blockType} ${isSelected}${s.archived ? ' archived' : ''}`;
+    return `<div class="${cardClass}" data-id="${s.id}" style="${pillStyle} grid-column: 1 / -1; flex-direction: row; align-items: center; padding: 12px; gap: 12px;">
       <input type="checkbox" class="row-checkbox" data-id="${s.id}" ${state.selectedIds.has(s.id) ? 'checked' : ''}>
       
       <div class="gc-scene-pill" style="background: transparent; color: var(--text-0); display:flex; align-items:center; gap:4px;">

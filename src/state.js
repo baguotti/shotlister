@@ -121,6 +121,7 @@ export const LS_LIST_PRESETS_KEY = 'sl-list-presets';
       props: '',
       duration: '',
       callTime: '',      // HH:MM — manually set anchor, empty = inherit
+      archived: false,
       ...overrides
     };
   }
@@ -136,6 +137,7 @@ export const LS_LIST_PRESETS_KEY = 'sl-list-presets';
       callTime: '',
       description: '',
       notes: '',
+      archived: false,
       ...overrides
     };
   }

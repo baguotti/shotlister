@@ -1,4 +1,4 @@
-import { state, setShots } from './state.js';
+import { state, setShots, getShot } from './state.js';
 import { render } from './events.js';
 import { save } from './storage.js';
 import { softRender } from './render-table.js';
@@ -99,4 +99,54 @@ export function reorderShots(srcId, targetId) {
   }
   
   save(); softRender();
+}
+
+export function initTouchSwipe(e, row) {
+  const touchStart = e.touches[0];
+  const startX = touchStart.clientX;
+  const startY = touchStart.clientY;
+  let isSwiping = false;
+  let directionDetermined = false;
+
+  const onMove = e2 => {
+    const touch = e2.touches[0];
+    const dx = touch.clientX - startX;
+    const dy = touch.clientY - startY;
+
+    if (!directionDetermined) {
+      if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 10) {
+        isSwiping = true;
+        directionDetermined = true;
+      } else if (Math.abs(dy) > 10) {
+        directionDetermined = true;
+      }
+    }
+
+    if (isSwiping) {
+      e2.preventDefault();
+      row.style.transform = `translateX(${dx}px)`;
+    }
+  };
+
+  const onEnd = e2 => {
+    document.removeEventListener('touchmove', onMove);
+    document.removeEventListener('touchend', onEnd);
+    row.style.transform = '';
+
+    if (isSwiping) {
+      const touch = e2.changedTouches[0];
+      const dx = touch.clientX - startX;
+      if (Math.abs(dx) > 80) {
+        const shot = getShot(row.dataset.id);
+        if (shot) {
+          shot.archived = !shot.archived;
+          save();
+          render();
+        }
+      }
+    }
+  };
+
+  document.addEventListener('touchmove', onMove, { passive: false });
+  document.addEventListener('touchend', onEnd);
 }

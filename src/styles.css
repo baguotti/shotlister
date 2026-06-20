@@ -115,7 +115,7 @@
 }
 
 html, body {
-  height: 100%; width: 100%;
+  height: 100dvh; width: 100%;
   font-family: var(--font-sans);
   font-size: 13px;
   line-height: 1.4;
@@ -136,7 +136,7 @@ html, body {
 #app {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: 100dvh;
   overflow: hidden;
 }
 
@@ -437,11 +437,37 @@ thead th {
 
 tbody tr {
   border-bottom: 1px solid var(--border);
-  transition: background .1s;
+  transition: background .1s, transform 0.2s ease, opacity 0.2s ease;
 }
 tbody tr:hover { background: var(--bg-2); }
 tbody tr.dragging { opacity: .4; }
 tbody tr.drag-over { border-top: 2px solid var(--accent); }
+
+/* Archived / Completed Shots */
+/* Only strike through specific inline elements to prevent giant lines across empty space */
+.grid-card.archived .gc-header .gc-scene-pill {
+  text-decoration: line-through;
+  opacity: 0.5;
+}
+
+/* Dim the rest of the row/card without strikethroughs */
+tbody tr.archived td:not(.col-actions):not(.storyboard-cell):not(.col-select):not(.drag-handle),
+.grid-card.archived .gc-body {
+  opacity: 0.4;
+}
+tbody tr.archived .storyboard-cell img,
+.grid-card.archived img {
+  opacity: 0.3;
+  filter: grayscale(100%);
+}
+tbody tr.archived {
+  background-color: var(--bg-0) !important;
+}
+.grid-card.archived {
+  background-color: var(--bg-0) !important;
+  border-color: var(--border) !important;
+}
+
 
 td {
   padding: 4px 6px;
@@ -1728,16 +1754,19 @@ body.zen-mode .grid-settings-bar {
   display: none !important;
 }
 
-/* XS Preset (Text Only - List View) */
-body.preset-XS .storyboard-cell img {
+/* XS Preset (Text Only - List View) & Archived Shots */
+body.preset-XS .storyboard-cell img,
+tbody tr.archived .storyboard-cell img {
   display: none !important;
 }
 
-body.preset-XS .storyboard-cell .placeholder {
+body.preset-XS .storyboard-cell .placeholder,
+tbody tr.archived .storyboard-cell .placeholder {
   display: none !important;
 }
 
-body.preset-XS .storyboard-cell .sb-thumb-wrap {
+body.preset-XS .storyboard-cell .sb-thumb-wrap,
+tbody tr.archived .storyboard-cell .sb-thumb-wrap {
   width: 18px !important;
   height: 14px !important;
   background: var(--bg-2);
@@ -1746,13 +1775,43 @@ body.preset-XS .storyboard-cell .sb-thumb-wrap {
   margin: 0 auto;
 }
 
-body.preset-XS .storyboard-cell:hover .sb-thumb-wrap {
+body.preset-XS .storyboard-cell:hover .sb-thumb-wrap,
+tbody tr.archived .storyboard-cell:hover .sb-thumb-wrap {
   background: var(--bg-3);
   border-color: var(--text-2);
 }
 
-body.preset-XS .storyboard-cell .sb-thumb-wrap::after {
+body.preset-XS .storyboard-cell .sb-thumb-wrap::after,
+tbody tr.archived .storyboard-cell .sb-thumb-wrap::after {
   display: none !important;
+}
+
+/* Make grid card archived state slim too */
+.grid-card.archived .gc-board {
+  display: none !important;
+}
+.grid-card.archived {
+  padding: 8px !important;
+  min-height: 0 !important;
+}
+
+/* Make archived list rows as slim as possible */
+tbody tr.archived {
+  height: 16px !important;
+}
+tbody tr.archived td {
+  padding: 0px 4px !important;
+  font-size: 9px !important;
+  line-height: 10px !important;
+  height: 16px !important;
+}
+tbody tr.archived input, tbody tr.archived select, tbody tr.archived .time-input {
+  padding: 0 !important;
+  margin: 0 !important;
+  font-size: 9px !important;
+  height: 14px !important;
+  min-height: 0 !important;
+  line-height: 10px !important;
 }
 
 body.view-mode-grid button[data-preset="XS"] {

@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <meta name="color-scheme" content="dark light">
-<meta name="theme-color" content="#0e0f11">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121212">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f4f4f6">
 <meta name="description" content="Shotlister — Offline PWA shot list manager for film production">
 <title>Shotlister</title>
 <script>
@@ -27,7 +28,7 @@
   <div id="homeView" style="display:none; flex:1; overflow-y:auto; padding: 32px 40px; flex-direction:column; background:var(--bg-0);">
     <div class="home-container">
       <div class="home-header">
-        <h1 class="home-title">Shotlister Projects <span class="home-version">BETA 0.1.7</span></h1>
+        <h1 class="home-title">Shotlister Projects <span class="home-version">BETA 0.1.8</span></h1>
         <div class="home-actions">
           <button class="btn btn-sync" id="btnSyncSettingsHome" aria-label="Cloud Sync Settings" title="Cloud Sync Settings"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; display: inline-block; vertical-align: middle; position: relative; top: -1px;"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg> <span id="syncStatusTextHome" class="hide-mobile">Offline Mode</span></button>
           <button class="btn" id="btnRefreshHome" title="Refresh App" onclick="window.location.reload()" aria-label="Refresh App" style="padding: 6px 8px;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
@@ -234,6 +235,7 @@
 
 <!-- Context Menu -->
 <div class="context-menu" id="contextMenu">
+  <button id="cmArchive" title="Mark as shot / Unmark as shot">Mark as shot</button>
   <button id="cmDuplicate" title="Duplicate">Duplicate</button>
   <button id="cmInsertAbove" title="Insert Above">Insert Above</button>
   <button id="cmInsertBelow" title="Insert Below">Insert Below</button>
