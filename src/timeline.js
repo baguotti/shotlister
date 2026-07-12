@@ -56,7 +56,8 @@ import { parseDuration, formatDuration, formatTime } from './schedule.js';
           title += ` (Sc ${group.numStr} Total: ${formatDuration(state.groupTotals[group.numStr].min)})`;
         }
         const defaultBg = s.kind === 'block' ? 'var(--bg-2)' : '';
-        const bg = group ? group.border : defaultBg;
+        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+        const bg = group ? (isLight ? group.tlBgLight : group.border) : defaultBg;
         return `<div class="tl-block${s.kind==='block' ? ' block-type-'+s.blockType : ''}" data-id="${s.id}" style="width:${pct}%;${bg?'background:'+bg+' !important':''}" title="${title}">` +
         `<span class="tl-tooltip">${title}</span></div>`;
       }).join('');
@@ -74,7 +75,8 @@ import { parseDuration, formatDuration, formatTime } from './schedule.js';
           title += ` (Sc ${group.numStr} Total: ${formatDuration(state.groupTotals[group.numStr].min)})`;
         }
         const defaultBg = s.kind === 'block' ? (s.blockType==='PREP'?'var(--orange)':s.blockType==='BREAK'?'var(--green)':s.blockType==='LUNCH'?'var(--blue)':s.blockType==='TRAVEL'?'#a855f7':s.blockType==='WRAP'?'var(--red)':'var(--text-2)') : '';
-        const bg = group ? group.border : defaultBg;
+        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+        const bg = group ? (isLight ? group.tlBgLight : group.border) : defaultBg;
         return `<div class="tl-block" data-id="${s.id}" style="width:${Math.max(pct, 0.5)}%;${bg?'background:'+bg+' !important':''}" title="${title}">` +
           `<span class="tl-tooltip">${title}</span></div>`;
       }).join('');

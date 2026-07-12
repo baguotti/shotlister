@@ -84,7 +84,7 @@ export const LS_LIST_PRESETS_KEY = 'sl-list-presets';
     if (!match) return null;
     const num = parseInt(match[1], 10);
     const idx = Math.abs(num - 1) % SCENE_COLORS.length;
-    return { numStr: match[1], border: SCENE_COLORS[idx], bg: SCENE_BGS[idx] };
+    return { numStr: match[1], border: SCENE_COLORS[idx], bg: SCENE_BGS[idx], tlBgLight: 'var(--scene-tl-bg-' + idx + ')' };
   }
 
   export function getNextShotNumber(sceneNum, shots) {
