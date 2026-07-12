@@ -1144,34 +1144,38 @@ input[type="file"].sr-only {
   }
 
   @page {
-    size: A4 landscape;
-    margin: 8mm 8mm 12mm 8mm;
-    @bottom-right {
-      content: "Page " counter(page);
-      font-family: var(--font-sans);
-      font-size: 7pt;
-      color: #888;
-    }
+    size: landscape;
+    margin: 10mm;
   }
 
-  html, body {
+  html, body, #app, #editorView, .table-wrap {
+    display: block !important;
     overflow: visible !important;
     height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    position: static !important;
     background: #fff !important;
     color: #111 !important;
     font-size: 8pt !important;
+    box-sizing: border-box !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
-  #app { height: auto !important; overflow: visible !important; }
-  .table-wrap { overflow: visible !important; height: auto !important; flex: none !important; }
 
   table {
     min-width: 0 !important;
     width: 100% !important;
+    max-width: 100% !important;
     table-layout: auto !important;
     border-collapse: collapse !important;
-    page-break-inside: auto;
+    margin-bottom: 0 !important;
+    page-break-after: auto !important;
+    break-after: auto !important;
   }
   thead { position: static !important; display: table-header-group !important; }
   thead th {
@@ -1209,8 +1213,17 @@ input[type="file"].sr-only {
     text-align: center !important;
   }
   
-  tbody tr[data-id] { height: auto !important; }
-  tbody tr { break-inside: avoid; page-break-inside: avoid; }
+  tbody tr {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    break-after: avoid !important;
+    page-break-after: avoid !important;
+  }
+  tbody tr.scene-summary-row,
+  tbody tr.location-subtotal {
+    break-after: auto !important;
+    page-break-after: auto !important;
+  }
 
   /* Print header */
   .print-header {
@@ -1227,20 +1240,40 @@ input[type="file"].sr-only {
 
   /* Hide screen-only UI */
   .toolbar, .footer, .timeline-bar, .filter-bar,
-  .drag-handle, .actions-btn, .context-menu,
-  .settings-view, .preset-ctrl, .bulk-action-bar, .col-select,
-  .col-drag, .col-actions,
-  .screen-only { display: none !important; }
+  .list-settings-bar, .grid-settings-bar, .grid-wrap,
+  .drag-handle, .actions-btn, .context-menu, #contextMenu,
+  .settings-view, #settingsView, .preset-ctrl, .bulk-action-bar, .col-select,
+  .col-drag, .col-actions, #lightbox, #sceneSummaryPanel,
+  dialog, .custom-modal, #printModal, #syncModal, #customPromptModal,
+  .screen-only, .print-hidden { display: none !important; }
 
   /* Show print-only */
   .print-only { display: inline !important; }
 
   /* Storyboard thumbnail */
+  .storyboard-cell {
+    width: 90pt !important;
+    max-width: 90pt !important;
+    min-width: 90pt !important;
+    padding: 6pt !important;
+    vertical-align: top !important;
+    background: transparent !important;
+  }
+  .storyboard-cell .sb-thumb-wrap {
+    display: block !important;
+    width: auto !important;
+    height: auto !important;
+    background: transparent !important;
+    aspect-ratio: auto !important;
+    overflow: visible !important;
+  }
   .storyboard-cell img {
+    display: block !important;
     max-width: 80pt !important;
     max-height: 50pt !important;
     width: auto !important;
     height: auto !important;
+    margin: 0 auto !important;
     object-fit: contain !important;
     border-radius: 2pt;
     border: 0.5pt solid #eaeaea;
@@ -1564,7 +1597,7 @@ input[type="file"].sr-only {
   font-size: 16px;
   font-weight: 600;
 }
-.custom-modal input {
+.custom-modal input:not([type="radio"]):not([type="checkbox"]) {
   width: 100%;
   background: var(--bg-2);
   border: 1px solid var(--border);
@@ -1575,6 +1608,15 @@ input[type="file"].sr-only {
   font-size: 14px;
   margin-bottom: 24px;
   box-sizing: border-box;
+}
+.custom-modal input[type="radio"],
+.custom-modal input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  flex-shrink: 0;
+  cursor: pointer;
+  accent-color: var(--accent);
 }
 .custom-modal input:focus {
   outline: none;

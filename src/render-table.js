@@ -118,7 +118,7 @@ import { syncRequest } from './sync.js';
           if (state.tableVisibility.description) summaryColSpan++;
           if (state.tableVisibility.notes) summaryColSpan++;
           
-          html += `<tr class="scene-summary-row" style="background: var(--bg-2); border-bottom: 1px solid var(--border);">
+          html += `<tr class="scene-summary-row" data-scene="${esc(String(currentScene || '').trim())}" style="background: var(--bg-2); border-bottom: 1px solid var(--border);">
             <td class="drag-handle"></td>
             <td class="col-select"></td>
             <td colspan="${summaryColSpan}" style="text-align: right; font-family: var(--font-mono); font-size: 11px; color: var(--text-2); padding: 6px 12px; font-weight: 600; text-transform: uppercase;">
@@ -341,7 +341,7 @@ import { syncRequest } from './sync.js';
       : '';
 
     const trClass = s.archived ? 'archived' : '';
-    return `<tr data-id="${s.id}" draggable="false" style="${rowStyle}" class="${trClass}">
+    return `<tr data-id="${s.id}" data-scene="${esc(String(s.num || '').trim())}" draggable="false" style="${rowStyle}" class="${trClass}">
       <td class="drag-handle" title="Drag to reorder" style="${borderStyle}">&#x2807;</td>
       <td class="col-select"><input type="checkbox" class="row-checkbox" data-id="${s.id}" ${state.selectedIds.has(s.id) ? 'checked' : ''}></td>
       <td class="storyboard-cell" data-id="${s.id}">${storyboardContent}</td>
@@ -391,7 +391,7 @@ import { syncRequest } from './sync.js';
       : '';
 
     const trClass = `block-row block-type-${s.blockType}${s.archived ? ' archived' : ''}`;
-    return `<tr class="${trClass}" data-id="${s.id}" draggable="false" style="${rowStyle}">
+    return `<tr class="${trClass}" data-id="${s.id}" data-scene="${esc(String(s.num || '').trim())}" draggable="false" style="${rowStyle}">
       <td class="drag-handle" title="Drag to reorder" style="${borderStyle}">&#x2807;</td>
       <td class="col-select"><input type="checkbox" class="row-checkbox" data-id="${s.id}" ${state.selectedIds.has(s.id) ? 'checked' : ''}></td>
       <td class="storyboard-cell"></td>
@@ -1015,7 +1015,7 @@ import { syncRequest } from './sync.js';
       let infoHTML = (topRowHTML || descHTML || castPropsHTML || techHTML) ? `<div class="gc-info">${topRowHTML}${descHTML}${castPropsHTML}${techHTML}</div>` : '';
 
     const cardClass = `grid-card${isSelected}${s.archived ? ' archived' : ''}`;
-    return `<div class="${cardClass}" data-id="${s.id}">
+    return `<div class="${cardClass}" data-id="${s.id}" data-scene="${esc(String(s.num || '').trim())}">
       <div class="col-actions" style="position: absolute; top: 0; right: 0; z-index: 10;"><button class="actions-btn" title="Actions" aria-label="Shot Actions" style="background: transparent; border: none; font-size: 18px; color: var(--text-0); cursor: pointer; padding: 4px;">&#x22EF;</button></div>
       ${headerHTML}
       <div class="gc-board-wrap storyboard-cell" data-id="${s.id}" style="cursor: pointer; aspect-ratio: ${ratioVal};">
@@ -1038,7 +1038,7 @@ import { syncRequest } from './sync.js';
     const isSelected = state.selectedIds.has(s.id) ? ' selected' : '';
 
     const cardClass = `grid-card block-row block-type-${s.blockType} ${isSelected}${s.archived ? ' archived' : ''}`;
-    return `<div class="${cardClass}" data-id="${s.id}" style="${pillStyle} grid-column: 1 / -1; flex-direction: row; align-items: center; padding: 12px; gap: 12px;">
+    return `<div class="${cardClass}" data-id="${s.id}" data-scene="${esc(String(s.num || '').trim())}" style="${pillStyle} grid-column: 1 / -1; flex-direction: row; align-items: center; padding: 12px; gap: 12px;">
       <input type="checkbox" class="row-checkbox" data-id="${s.id}" ${state.selectedIds.has(s.id) ? 'checked' : ''}>
       
       <div class="gc-scene-pill" style="background: transparent; color: var(--text-0); display:flex; align-items:center; gap:4px;">

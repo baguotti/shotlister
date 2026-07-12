@@ -744,19 +744,146 @@ $('btnThemeToggle').addEventListener('click', () => {
 });
 
 // ── Print ──────────────────────────────────────
-$('btnPrint').addEventListener('click', () => {
-  $('printTitle').textContent = dom.projectTitle.textContent.trim() || 'Untitled Project';
+function clearPrintFilters() {
+  document.querySelectorAll('.print-hidden').forEach(el => el.classList.remove('print-hidden'));
+}
+
+function openPrintModal() {
+  const container = $('printSceneOptions');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const sceneCounts = new Map();
+  const sceneOrder = [];
+  state.shots.forEach(s => {
+    const num = s.num ? String(s.num).trim() : '';
+    if (num) {
+      if (!sceneCounts.has(num)) {
+        sceneCounts.set(num, 0);
+        sceneOrder.push(num);
+      }
+      if (s.kind === 'shot') {
+        sceneCounts.set(num, sceneCounts.get(num) + 1);
+      }
+    }
+  });
+
+  const totalShots = state.shots.filter(s => s.kind === 'shot').length;
+
+  const allLabel = document.createElement('label');
+  allLabel.style.cssText = 'display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-1);';
+  allLabel.innerHTML = `
+    <input type="checkbox" id="printSelectAll" checked style="margin: 0; cursor: pointer;">
+    <span style="font-weight: 600; color: var(--text-0);">ALL (Entire Project — ${totalShots} shots)</span>
+  `;
+  container.appendChild(allLabel);
+
+  const sceneCheckboxes = [];
+
+  sceneOrder.forEach(num => {
+    const count = sceneCounts.get(num) || 0;
+    const lbl = document.createElement('label');
+    lbl.style.cssText = 'display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-1);';
+    lbl.innerHTML = `
+      <input type="checkbox" class="print-scene-chk" value="${esc(num)}" checked style="margin: 0; cursor: pointer;">
+      <span style="font-weight: 600; color: var(--text-0);">SCENE ${esc(num)} (${count} ${count === 1 ? 'shot' : 'shots'})</span>
+    `;
+    container.appendChild(lbl);
+
+    const chk = lbl.querySelector('.print-scene-chk');
+    sceneCheckboxes.push(chk);
+  });
+
+  const selectAllChk = allLabel.querySelector('#printSelectAll');
+
+  selectAllChk.addEventListener('change', () => {
+    const checked = selectAllChk.checked;
+    sceneCheckboxes.forEach(chk => {
+      chk.checked = checked;
+    });
+  });
+
+  sceneCheckboxes.forEach(chk => {
+    chk.addEventListener('change', () => {
+      const allChecked = sceneCheckboxes.every(c => c.checked);
+      selectAllChk.checked = allChecked;
+    });
+  });
+
+  const modal = $('printModal');
+  if (modal) modal.showModal();
+}
+
+$('btnPrint').addEventListener('click', (e) => {
+  if (e && e.preventDefault) e.preventDefault();
+  if (e && e.stopPropagation) e.stopPropagation();
+  const drop = $('dropSettings');
+  if (drop) drop.classList.remove('open');
+  setTimeout(() => openPrintModal(), 50);
+});
+
+$('printModalClose')?.addEventListener('click', () => $('printModal')?.close());
+$('printModalCancel')?.addEventListener('click', () => $('printModal')?.close());
+
+$('printModalConfirm')?.addEventListener('click', (e) => {
+  if (e && e.preventDefault) e.preventDefault();
+  
+  const selectAllChk = $('printSelectAll');
+  const checkedChks = document.querySelectorAll('.print-scene-chk:checked');
+  const allChks = document.querySelectorAll('.print-scene-chk');
+
+  const printAll = selectAllChk && selectAllChk.checked;
+  const modal = $('printModal');
+  if (modal) modal.close();
+
+  clearPrintFilters();
+
+  const selectedScenes = new Set(Array.from(checkedChks).map(c => c.value));
+
+  if (!printAll) {
+    document.querySelectorAll('[data-scene]').forEach(el => {
+      const sceneNum = el.dataset.scene ? String(el.dataset.scene).trim() : '';
+      if (!selectedScenes.has(sceneNum)) {
+        el.classList.add('print-hidden');
+      }
+    });
+  }
+
+  let titleSuffix = '';
+  if (printAll || selectedScenes.size === allChks.length) {
+    titleSuffix = '';
+  } else if (selectedScenes.size === 1) {
+    titleSuffix = ' — SCENE ' + Array.from(selectedScenes)[0];
+  } else if (selectedScenes.size > 0) {
+    titleSuffix = ' — SCENES ' + Array.from(selectedScenes).sort((a, b) => {
+      const aNum = parseInt(a), bNum = parseInt(b);
+      if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
+      return a.localeCompare(b);
+    }).join(', ');
+  } else {
+    titleSuffix = ' — EMPTY';
+  }
+
+  $('printTitle').textContent = (dom.projectTitle.textContent.trim() || 'Untitled Project') + titleSuffix;
   $('printDate').textContent = new Date().toLocaleDateString('en-GB', {
     year: 'numeric', month: 'long', day: 'numeric'
   });
-  window.print();
+
+  setTimeout(() => {
+    window.print();
+    setTimeout(clearPrintFilters, 1500);
+  }, 300);
 });
+
+window.addEventListener('afterprint', clearPrintFilters);
+
 window.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
     e.preventDefault();
-    $('btnPrint').click();
+    openPrintModal();
   }
 });
+
 
 // Restore theme
 {
