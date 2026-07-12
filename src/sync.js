@@ -1,4 +1,4 @@
-import { state, LS_SYNC_CODE_KEY, LS_LAST_PROJ_KEY } from './state.js';
+import { state, LS_SYNC_CODE_KEY, LS_LAST_PROJ_KEY, LS_READONLY_KEY } from './state.js';
 import { dom } from './dom.js';
 import { getProject, getImage } from './db.js';
 import { renderHome, loadProject } from './main.js';
@@ -92,6 +92,17 @@ export async function connectAndSync(passcode) {
     }
     
     await syncRequest('save_list', state.projectsList);
+
+    // After sync, check if this is a view-only account
+    const voCheck = await syncRequest('check_viewonly', null);
+    if (voCheck && voCheck.isViewOnly) {
+      state.isReadonlySync = true;
+      localStorage.setItem(LS_READONLY_KEY, '1');
+    } else {
+      state.isReadonlySync = false;
+      localStorage.removeItem(LS_READONLY_KEY);
+    }
+
     renderHome();
   } catch(err) {
     console.error('connectAndSync error:', err);
@@ -126,7 +137,9 @@ export function initSyncListeners() {
     if (confirm('Disconnect from Cloud Sync? Your data will remain locally, but will no longer sync.')) {
       state.syncPasscode = null;
       state.syncStatus = 'offline';
+      state.isReadonlySync = false;
       localStorage.removeItem(LS_SYNC_CODE_KEY);
+      localStorage.removeItem(LS_READONLY_KEY);
       dom.syncDisconnect.style.display = 'none';
       dom.syncForceImages.style.display = 'none';
       updateSyncStatus('offline');
@@ -167,6 +180,10 @@ export async function initSyncAndLoad() {
   const savedSyncCode = localStorage.getItem(LS_SYNC_CODE_KEY);
   if (savedSyncCode) {
     state.syncPasscode = savedSyncCode;
+    // Restore view-only flag from localStorage (persists across reloads)
+    if (localStorage.getItem(LS_READONLY_KEY) === '1') {
+      state.isReadonlySync = true;
+    }
     dom.syncDisconnect.style.display = 'inline-block';
     dom.syncForceImages.style.display = 'inline-block';
     updateSyncStatus('syncing');
@@ -175,12 +192,15 @@ export async function initSyncAndLoad() {
     if (remoteList) {
       const mergedMap = new Map();
       remoteList.forEach(p => mergedMap.set(p.id, p));
-      state.projectsList.forEach(p => {
-        const remote = mergedMap.get(p.id);
-        if (!remote || p.updatedAt > remote.updatedAt) {
-          mergedMap.set(p.id, p);
-        }
-      });
+      // For view-only accounts don't merge local (only show what the owner published)
+      if (!state.isReadonlySync) {
+        state.projectsList.forEach(p => {
+          const remote = mergedMap.get(p.id);
+          if (!remote || p.updatedAt > remote.updatedAt) {
+            mergedMap.set(p.id, p);
+          }
+        });
+      }
       state.projectsList = Array.from(mergedMap.values());
       saveProjects();
       updateSyncStatus('synced');
@@ -195,4 +215,26 @@ export async function initSyncAndLoad() {
   } else {
     renderHome();
   }
+}
+
+// Publish the current project as a read-only copy under a crew passcode
+export async function publishViewOnly(viewPasscodeRaw) {
+  if (!state.syncPasscode) {
+    alert('You need to be connected to Cloud Sync to publish a view-only copy.');
+    return false;
+  }
+  if (!state.currentProjectId) {
+    alert('No project is currently open.');
+    return false;
+  }
+  const hashedView = await hashPasscode(viewPasscodeRaw);
+  const shots = state.shots;
+  const projectMeta = state.projectsList.find(p => p.id === state.currentProjectId) || { id: state.currentProjectId };
+  const result = await syncRequest('publish_view', {
+    projectId: state.currentProjectId,
+    viewPasscode: hashedView,
+    shots,
+    projectMeta
+  });
+  return result && result.success;
 }

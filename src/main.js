@@ -11,7 +11,7 @@ import { initPWA } from './pwa.js';
 import { getProject, putProject, deleteProject, putImage, getImage } from './db.js';
 import { initDrag, initTouchDrag, reorderShots } from './drag-drop.js';
 import { initBulkActions, updateSelectionUI } from './bulk-actions.js';
-import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
+import { initSyncListeners, initSyncAndLoad, syncRequest, publishViewOnly } from './sync.js';
 import { save, saveProjects, migrateLegacyData } from './storage.js';
 import { initTooltips } from './tooltip.js';
 import { onRender, render } from './events.js';
@@ -616,6 +616,7 @@ document.addEventListener('fullscreenchange', onFSChange);
 document.addEventListener('webkitfullscreenchange', onFSChange);
 
 $('btnLockToggle')?.addEventListener('click', () => {
+  if (state.isReadonlySync) return; // view-only accounts cannot unlock
   state.isLocked = !state.isLocked;
   const btn = $('btnLockToggle');
   const app = $('app');
@@ -633,6 +634,52 @@ $('btnLockToggle')?.addEventListener('click', () => {
   }
   applyLockState();
   render();
+});
+
+// ── Publish View-Only Modal ────────────────────
+const publishViewModal = $('publishViewModal');
+const publishViewSubmit = $('publishViewSubmit');
+const publishViewCancel = $('publishViewCancel');
+const publishViewPasscodeInput = $('viewOnlyPasscodeInput');
+const publishViewStatus = $('publishViewStatus');
+
+$('btnPublishViewOnly')?.addEventListener('click', () => {
+  if (!state.syncPasscode) {
+    alert('You need to connect to Cloud Sync before publishing a view-only copy.');
+    return;
+  }
+  publishViewPasscodeInput.value = '';
+  publishViewStatus.style.display = 'none';
+  publishViewStatus.textContent = '';
+  publishViewModal.showModal();
+  setTimeout(() => publishViewPasscodeInput.focus(), 10);
+});
+
+publishViewCancel?.addEventListener('click', () => publishViewModal.close());
+
+publishViewSubmit?.addEventListener('click', async () => {
+  const passcode = publishViewPasscodeInput.value.trim();
+  if (!passcode) {
+    publishViewStatus.textContent = 'Please enter a passcode.';
+    publishViewStatus.style.color = 'var(--red)';
+    publishViewStatus.style.display = 'block';
+    return;
+  }
+  publishViewSubmit.disabled = true;
+  publishViewSubmit.textContent = 'Publishing...';
+  publishViewStatus.style.display = 'none';
+  const ok = await publishViewOnly(passcode);
+  publishViewSubmit.disabled = false;
+  publishViewSubmit.textContent = 'Publish Now';
+  if (ok) {
+    publishViewStatus.textContent = `✓ Published! Share the passcode: "${passcode}" with your crew.`;
+    publishViewStatus.style.color = 'var(--accent)';
+    publishViewStatus.style.display = 'block';
+  } else {
+    publishViewStatus.textContent = 'Failed to publish. Make sure you are synced.';
+    publishViewStatus.style.color = 'var(--red)';
+    publishViewStatus.style.display = 'block';
+  }
 });
 
 $('btnToggleSummary').addEventListener('click', () => {
@@ -1107,7 +1154,31 @@ function renderAll() {
 onRender(renderAll);
 
 function applyLockState() {
-  const locked = !!state.isLocked;
+  const locked = !!state.isLocked || !!state.isReadonlySync;
+
+  // In view-only mode: hide lock button entirely, force lock icon to closed
+  const lockBtn = $('btnLockToggle');
+  const app = $('app');
+  const icon = $('iconLock');
+  if (state.isReadonlySync) {
+    if (lockBtn) lockBtn.style.display = 'none';
+    if (app) app.classList.add('is-locked');
+    if (dom.projectTitle) dom.projectTitle.contentEditable = 'false';
+    // Also hide publish button for view-only users
+    const publishBtn = $('btnPublishViewOnly');
+    if (publishBtn) publishBtn.style.display = 'none';
+  } else if (locked) {
+    if (lockBtn) lockBtn.style.display = '';
+    if (app) app.classList.add('is-locked');
+    if (dom.projectTitle) dom.projectTitle.contentEditable = 'false';
+    if (icon) icon.innerHTML = '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>';
+  } else {
+    if (lockBtn) lockBtn.style.display = '';
+    if (app) app.classList.remove('is-locked');
+    if (dom.projectTitle) dom.projectTitle.contentEditable = 'true';
+    if (icon) icon.innerHTML = '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>';
+  }
+
   // Toggle contenteditable on all editable cells
   document.querySelectorAll('[data-field][contenteditable]').forEach(el => {
     el.contentEditable = locked ? 'false' : 'true';

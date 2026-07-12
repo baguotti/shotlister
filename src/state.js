@@ -14,7 +14,7 @@ export const state = {
     calltime: true, endtime: true, running: true
   },
   listPresets: {},
-  syncPasscode: null, syncStatus: 'offline' // 'offline' | 'syncing' | 'synced' | 'error'
+  syncPasscode: null, syncStatus: 'offline', isReadonlySync: false // 'offline' | 'syncing' | 'synced' | 'error'
 };
 
 export function getShot(id) {
@@ -46,6 +46,7 @@ export function clearSelection() {
   export const LS_GRID_VIS_KEY = 'sl-grid-vis';
   export const LS_TABLE_VIS_KEY = 'sl-table-vis';
   export const LS_SYNC_CODE_KEY = 'sl-sync-code';
+export const LS_READONLY_KEY = 'sl-readonly-sync';
 export const LS_LIST_PRESETS_KEY = 'sl-list-presets';
   
   export const LS_AC_CHARS = 'sl-ac-characters';

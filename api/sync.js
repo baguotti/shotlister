@@ -107,6 +107,34 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true });
     }
 
+    // Publish a read-only snapshot of a project under a separate view-only passcode
+    if (action === 'publish_view') {
+      const { projectId, viewPasscode, shots, projectMeta } = payload || {};
+      if (!projectId || typeof projectId !== 'string' || projectId.length > 50) {
+        return res.status(400).json({ error: 'Invalid projectId' });
+      }
+      if (!viewPasscode || typeof viewPasscode !== 'string' || viewPasscode.length > 200) {
+        return res.status(400).json({ error: 'Invalid viewPasscode' });
+      }
+      if (!shots || !Array.isArray(shots)) {
+        return res.status(400).json({ error: 'Invalid shots payload' });
+      }
+      // Store the shots under the view-only passcode namespace
+      await redis.set(`sl:user:${viewPasscode}:project:${projectId}`, shots);
+      // Store a minimal project list so the view user sees the project on home
+      const viewList = [{ ...(projectMeta || {}), id: projectId }];
+      await redis.set(`sl:user:${viewPasscode}:projects`, viewList);
+      // Mark this passcode as view-only so the app can detect it on login
+      await redis.set(`sl:viewonly:${viewPasscode}`, '1');
+      return res.status(200).json({ success: true });
+    }
+
+    // Check if a passcode is view-only
+    if (action === 'check_viewonly') {
+      const flag = await redis.get(`sl:viewonly:${passcode}`);
+      return res.status(200).json({ isViewOnly: flag === '1' });
+    }
+
     return res.status(400).json({ error: 'Invalid action' });
   } catch (err) {
     console.error('API sync error:', err);

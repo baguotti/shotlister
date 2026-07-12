@@ -113,6 +113,11 @@
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; display: block;"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
           Print
         </button>
+        <div style="height: 1px; background: var(--border); margin: 4px 0;"></div>
+        <button class="btn" id="btnPublishViewOnly" title="Publish a read-only view-only copy for your crew" style="border: none; background: transparent; width: 100%; justify-content: flex-start; padding: 6px 12px; color: var(--accent);">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px; display: block;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Publish View-Only Copy
+        </button>
       </div>
     </div>
     <button class="btn" id="btnThemeToggle" title="Theme" aria-label="Toggle Theme">
@@ -338,6 +343,26 @@
     <div class="modal-actions" style="display: flex; justify-content: center; gap: 12px; width: 100%;">
       <button id="printModalCancel" class="btn" style="min-width: 110px; justify-content: center;" title="Cancel">Cancel</button>
       <button id="printModalConfirm" class="btn primary" style="min-width: 110px; justify-content: center;" title="Print Selected">Print</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- Publish View-Only Modal -->
+<dialog id="publishViewModal" class="custom-modal">
+  <div class="modal-content" style="max-width: 420px;">
+    <h3>Publish View-Only Copy</h3>
+    <p style="font-size: 12px; color: var(--text-2); margin-bottom: 16px; line-height: 1.6;">
+      Creates a read-only copy of this project under a separate passcode.<br>
+      Share <strong>shotlister.vercel.app</strong> + the passcode with your crew — they will see the project in permanent locked mode.
+    </p>
+    <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px;">
+      <label for="viewOnlyPasscodeInput" style="font-family: var(--font-mono); font-size: 11px; color: var(--text-1); text-align: left;">View-Only Passcode</label>
+      <input type="text" id="viewOnlyPasscodeInput" placeholder="Choose a passcode for your crew..." autocomplete="off" style="width: 100%; box-sizing: border-box;">
+    </div>
+    <div id="publishViewStatus" style="font-size: 12px; color: var(--accent); min-height: 20px; margin-bottom: 12px; display: none;"></div>
+    <div class="modal-actions" style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+      <button id="publishViewSubmit" class="btn primary" style="width: 100%; justify-content: center;" title="Publish">Publish Now</button>
+      <button id="publishViewCancel" class="btn" style="width: 100%; justify-content: center;" title="Cancel">Cancel</button>
     </div>
   </div>
 </dialog>
