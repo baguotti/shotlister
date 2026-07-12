@@ -1,6 +1,7 @@
 {
   "name": "shotlister",
-  "version": "1.0.2",
+  "private": true,
+  "version": "1.0.3",
   "description": "Offline PWA shot list manager for film production",
   "type": "module",
   "scripts": {
