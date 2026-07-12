@@ -615,6 +615,25 @@ const onFSChange = () => {
 document.addEventListener('fullscreenchange', onFSChange);
 document.addEventListener('webkitfullscreenchange', onFSChange);
 
+$('btnLockToggle')?.addEventListener('click', () => {
+  state.isLocked = !state.isLocked;
+  const btn = $('btnLockToggle');
+  const app = $('app');
+  const icon = $('iconLock');
+  if (state.isLocked) {
+    btn?.classList.add('active');
+    app?.classList.add('is-locked');
+    if (dom.projectTitle) dom.projectTitle.contentEditable = 'false';
+    if (icon) icon.innerHTML = '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>';
+  } else {
+    btn?.classList.remove('active');
+    app?.classList.remove('is-locked');
+    if (dom.projectTitle) dom.projectTitle.contentEditable = 'true';
+    if (icon) icon.innerHTML = '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>';
+  }
+  render();
+});
+
 $('btnToggleSummary').addEventListener('click', () => {
   const p = $('sceneSummaryPanel');
   const isHidden = p.style.display === 'none';

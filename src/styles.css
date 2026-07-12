@@ -1917,3 +1917,32 @@ body.view-mode-grid button[data-preset="XS"] {
   transform: translate(-50%, 0) scale(1);
   transition-delay: 0.3s;
 }
+
+#btnLockToggle.active {
+  background: rgba(239, 196, 196, 0.2) !important;
+  color: var(--red) !important;
+  border-color: var(--red) !important;
+}
+
+/* Locked mode styling */
+#app.is-locked td[contenteditable="true"],
+#app.is-locked div[contenteditable="true"],
+#app.is-locked span[contenteditable="true"] {
+  pointer-events: none !important;
+  user-select: none !important;
+}
+#app.is-locked select,
+#app.is-locked input,
+#app.is-locked textarea {
+  pointer-events: none !important;
+  opacity: 0.6;
+}
+#app.is-locked .priority-label,
+#app.is-locked .drag-handle,
+#app.is-locked .actions-btn,
+#app.is-locked .add-row-btn,
+#app.is-locked .lb-btn-replace,
+#app.is-locked .lb-btn-delete {
+  pointer-events: none !important;
+  opacity: 0.5;
+}

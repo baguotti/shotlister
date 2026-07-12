@@ -2,7 +2,7 @@ import { dom, $ } from './dom.js';
 
 
 export const state = {
-  projectsList: [], currentProjectId: null, shots: [], viewMode: 'list', currentGroupMode: 'none',
+  projectsList: [], currentProjectId: null, shots: [], viewMode: 'list', currentGroupMode: 'none', isLocked: false,
   contextRowId: null, dragSrcId: null, currentStoryboardId: null, lbShotIds: [], lbIndex: -1,
   selectedIds: new Set(),
   currentPreset: 'M', boardRatio: 'auto', acSets: { characters: new Set(), location: new Set(), props: new Set(), shotSize: new Set(), lens: new Set(), movement: new Set() },

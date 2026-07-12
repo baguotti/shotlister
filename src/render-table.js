@@ -449,6 +449,7 @@ import { syncRequest } from './sync.js';
     const selectAll = $('selectAll');
     if (selectAll) {
       selectAll.addEventListener('change', e => {
+        if (state.isLocked) { e.target.checked = !e.target.checked; return; }
         if (e.target.checked) {
           state.shots.forEach(s => state.selectedIds.add(s.id));
         } else {
@@ -460,6 +461,7 @@ import { syncRequest } from './sync.js';
     }
 
     bind('change', async e => {
+      if (state.isLocked) return;
       const target = e.target;
       if (target.matches('.row-checkbox')) {
         const id = target.dataset.id;
@@ -534,6 +536,7 @@ import { syncRequest } from './sync.js';
     });
 
     bind('focusin', e => {
+      if (state.isLocked) return;
       const target = e.target;
       if (target.matches('[contenteditable="true"]')) {
         const field = target.dataset.field;
@@ -551,6 +554,7 @@ import { syncRequest } from './sync.js';
     });
 
     bind('input', e => {
+      if (state.isLocked) return;
       const target = e.target;
       if (target.matches('[contenteditable="true"]')) {
         if (isAutocompleteActiveFor(target)) filterAutocomplete();
@@ -558,6 +562,7 @@ import { syncRequest } from './sync.js';
     });
 
     bind('focusout', e => {
+      if (state.isLocked) return;
       const target = e.target;
       if (target.matches('[contenteditable="true"]')) {
         const field = target.dataset.field;
@@ -635,6 +640,7 @@ import { syncRequest } from './sync.js';
     });
 
     bind('keydown', e => {
+      if (state.isLocked) return;
       const target = e.target;
       if (target.matches('[contenteditable="true"]')) {
         if (handleAutocompleteKey(e, target)) return;
@@ -647,6 +653,24 @@ import { syncRequest } from './sync.js';
 
     bind('click', e => {
       const target = e.target;
+      
+      const storyboardCell = target.closest('.storyboard-cell');
+      if (storyboardCell) {
+        const id = storyboardCell.dataset.id;
+        if (!id) return; 
+        const shot = getShot(id);
+        if (!shot) return;
+        if (shot.storyboard) {
+          openLightbox(id);
+        } else {
+          if (state.isLocked) return;
+          state.currentStoryboardId = id;
+          dom.fileInput.click();
+        }
+        return;
+      }
+
+      if (state.isLocked) return;
       
       const row = target.closest('tr[data-id], .grid-card[data-id]');
       if (row && (e.metaKey || e.ctrlKey || e.shiftKey) && !target.closest('.actions-btn') && !target.closest('.storyboard-cell')) {
@@ -702,21 +726,6 @@ import { syncRequest } from './sync.js';
         return;
       }
 
-      const storyboardCell = target.closest('.storyboard-cell');
-      if (storyboardCell) {
-        const id = storyboardCell.dataset.id;
-        if (!id) return; 
-        const shot = getShot(id);
-        if (!shot) return;
-        if (shot.storyboard) {
-          openLightbox(id);
-        } else {
-          state.currentStoryboardId = id;
-          dom.fileInput.click();
-        }
-        return;
-      }
-
       const actionsBtn = target.closest('.actions-btn');
       if (actionsBtn) {
         e.stopPropagation();
@@ -728,11 +737,13 @@ import { syncRequest } from './sync.js';
     });
 
     bind('mousedown', e => {
+      if (state.isLocked) return;
       const handle = e.target.closest('.drag-handle');
       if (handle) initDrag(e, handle);
     });
 
     bind('touchstart', e => {
+      if (state.isLocked) return;
       const handle = e.target.closest('.drag-handle');
       if (handle) {
         initTouchDrag(e, handle);

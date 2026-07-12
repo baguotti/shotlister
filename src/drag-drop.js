@@ -136,7 +136,7 @@ export function initTouchSwipe(e, row) {
     if (isSwiping) {
       const touch = e2.changedTouches[0];
       const dx = touch.clientX - startX;
-      if (Math.abs(dx) > 80) {
+      if (Math.abs(dx) > 150) {
         const shot = getShot(row.dataset.id);
         if (shot) {
           shot.archived = !shot.archived;

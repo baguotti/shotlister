@@ -66,6 +66,12 @@
     <button class="btn" id="btnSyncSettingsEditor" aria-label="Cloud Sync Settings" title="Cloud Sync Settings" style="display:flex; align-items:center; gap:4px; font-size:11px;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg> <span id="syncStatusTextEditor">Offline</span></button>
     <button class="btn" id="btnRefreshEditor" title="Refresh App" onclick="window.location.reload()" aria-label="Refresh App" style="display:flex; align-items:center; padding: 6px 8px;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
     <button class="btn" id="btnFullscreen" title="Fullscreen" aria-label="Toggle Fullscreen" style="display:flex; align-items:center; padding: 6px 8px;"><svg id="iconFullscreen" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg></button>
+    <button class="btn" id="btnLockToggle" title="Lock Screen" aria-label="Toggle Lock Mode" style="display:flex; align-items:center; padding: 6px 8px;">
+      <svg id="iconLock" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+        <path d="M7 11V7a5 5 0 0 1 9.9-1"/>
+      </svg>
+    </button>
     <div class="preset-ctrl" id="presetCtrl">
       <button data-preset="XS" title="Text Only (Extra Small)" aria-label="Extra Small Size">XS</button>
       <button data-preset="S" title="Compact" aria-label="Compact Size">S</button>
