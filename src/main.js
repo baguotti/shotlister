@@ -631,6 +631,7 @@ $('btnLockToggle')?.addEventListener('click', () => {
     if (dom.projectTitle) dom.projectTitle.contentEditable = 'true';
     if (icon) icon.innerHTML = '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>';
   }
+  applyLockState();
   render();
 });
 
@@ -1101,8 +1102,21 @@ function renderAll() {
     renderTable();
   }
   applyPresetLayout();
+  applyLockState();
 }
 onRender(renderAll);
+
+function applyLockState() {
+  const locked = !!state.isLocked;
+  // Toggle contenteditable on all editable cells
+  document.querySelectorAll('[data-field][contenteditable]').forEach(el => {
+    el.contentEditable = locked ? 'false' : 'true';
+  });
+  // Disable all form controls inside the table/grid
+  document.querySelectorAll('#shotBody select, #gridWrap select, #shotBody input, #gridWrap input').forEach(el => {
+    el.disabled = locked;
+  });
+}
 
 // ── Init ───────────────────────────────────────
 loadLayout();
