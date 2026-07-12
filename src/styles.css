@@ -864,6 +864,7 @@ input[type="file"].sr-only {
 .block-row.block-type-BREAK td:first-child { border-left-color: var(--green); }
 .block-row.block-type-LUNCH td:first-child { border-left-color: var(--blue); }
 .block-row.block-type-TRAVEL td:first-child { border-left-color: #a855f7; }
+.block-row.block-type-WRAP td:first-child { border-left-color: var(--red); }
 .block-row.block-type-CUSTOM td:first-child { border-left-color: var(--text-2); }
 
 .block-select {
@@ -875,6 +876,22 @@ input[type="file"].sr-only {
   color: inherit;
   outline: none;
   cursor: pointer;
+}
+/* Style block-select when blockType is CUSTOM to hide the word 'CUSTOM' and show a neat dropdown arrow */
+.block-row.block-type-CUSTOM .block-select {
+  color: transparent !important;
+  width: 20px !important;
+  height: 20px !important;
+  padding: 0 !important;
+  margin-right: 4px !important;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat center center !important;
+  background-size: 12px !important;
+  cursor: pointer !important;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.block-row.block-type-CUSTOM .block-select option {
+  color: var(--text-0) !important;
 }
 .block-label {
   font-family: var(--font-mono);
@@ -1732,6 +1749,21 @@ input[type="file"].sr-only {
   font-family: var(--font-mono);
   font-size: calc(var(--grid-font-sz) * 0.85);
   color: var(--text-1);
+}
+/* Style blockType select in card view when it's a CUSTOM block */
+.grid-card.block-type-CUSTOM select[data-field="blockType"] {
+  color: transparent !important;
+  width: 20px !important;
+  height: 20px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  background: var(--bg-2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat center center !important;
+  background-size: 12px !important;
+  cursor: pointer !important;
+  border: 1px solid var(--border) !important;
+}
+.grid-card.block-type-CUSTOM select[data-field="blockType"] option {
+  color: var(--text-0) !important;
 }
 
 .grid-group-header {

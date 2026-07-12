@@ -8,7 +8,7 @@ import { renderSettings } from './render-settings.js';
 import { renderTimeline } from './timeline.js';
 import { loadAutocomplete, extractAutocompleteFromShots, buildAutocompleteSets } from './autocomplete.js';
 import { initPWA } from './pwa.js';
-import { getProject, putProject, deleteProject, putImage } from './db.js';
+import { getProject, putProject, deleteProject, putImage, getImage } from './db.js';
 import { initDrag, initTouchDrag, reorderShots } from './drag-drop.js';
 import { initBulkActions, updateSelectionUI } from './bulk-actions.js';
 import { initSyncListeners, initSyncAndLoad, syncRequest } from './sync.js';
@@ -476,7 +476,27 @@ $('projectGrid').addEventListener('click', async e => {
       try {
         const newPid = uid();
         let oldShots = await getShotsForProject(idToDup);
-        const clonedShots = oldShots.map(s => ({ ...s, id: uid() }));
+        const clonedShots = [];
+        const imageCopies = [];
+
+        for (const s of oldShots) {
+          const newId = uid();
+          clonedShots.push({ ...s, id: newId });
+          if (s.storyboard) {
+            imageCopies.push((async () => {
+              try {
+                const imgData = await getImage(s.id);
+                if (imgData) {
+                  await putImage(newId, imgData);
+                }
+              } catch (e) {
+                console.error(`Failed to copy storyboard image for shot ${s.id}:`, e);
+              }
+            })());
+          }
+        }
+
+        await Promise.all(imageCopies);
 
         state.projectsList.unshift({ id: newPid, title: pToDup.title + ' (Copy)', updatedAt: Date.now(), count: clonedShots.length });
         saveProjects();
@@ -751,11 +771,14 @@ dom.projectTitle.addEventListener('blur', () => { save(); fitTitleFont(); });
 dom.projectTitle.addEventListener('keydown', e => {
   if (e.key === 'Enter') { e.preventDefault(); dom.projectTitle.blur(); }
 });
-dom.projectTitle.addEventListener('paste', e => {
-  // Paste as plain text only
-  e.preventDefault();
-  const text = e.clipboardData.getData('text/plain');
-  document.execCommand('insertText', false, text);
+// Global paste handler to paste as plain text only for contenteditable elements
+document.addEventListener('paste', e => {
+  const target = e.target;
+  if (target.closest('[contenteditable="true"]')) {
+    e.preventDefault();
+    const text = (e.originalEvent || e).clipboardData.getData('text/plain');
+    document.execCommand('insertText', false, text);
+  }
 });
 
 // ── Persistence ────────────────────────────────

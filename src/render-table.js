@@ -161,6 +161,13 @@ import { syncRequest } from './sync.js';
           if (sceneNum) {
             sceneShots.push(s);
           }
+        } else {
+          // Block with no scene number: close pending scene summary before it
+          if (currentScene !== null) {
+            renderSceneSummary();
+            currentScene = null;
+            sceneShots = [];
+          }
         }
 
         const dur = parseDuration(s.duration);
@@ -395,9 +402,9 @@ import { syncRequest } from './sync.js';
       ${state.tableVisibility.description ? `<td>
         <div style="display:inline-flex; align-items:center; gap:8px;">
           <select data-field="blockType" class="block-select screen-only">
-            ${['PREP','BREAK','LUNCH','TRAVEL','CUSTOM'].map(t => `<option value="${t}"${s.blockType === t ? ' selected' : ''}>${t}</option>`).join('')}
+            ${['PREP','BREAK','LUNCH','TRAVEL','WRAP','CUSTOM'].map(t => `<option value="${t}"${s.blockType === t ? ' selected' : ''}>${t}</option>`).join('')}
           </select>
-          <span class="print-only">${esc(s.blockType)}</span>
+          <span class="print-only">${s.blockType === 'CUSTOM' ? '' : esc(s.blockType)}</span>
           <span contenteditable="true" data-field="label" class="block-label" data-placeholder="Label..." style="${s.blockType === 'CUSTOM' ? 'display:inline-block;' : 'display:none;'}">${esc(s.label || '')}</span>
         </div>
       </td>` : ''}
@@ -815,12 +822,23 @@ import { syncRequest } from './sync.js';
     }
   });
 
-  $('cmDuplicate').addEventListener('click', () => {
+  $('cmDuplicate').addEventListener('click', async () => {
     if (!state.contextRowId) return;
     const src = getShot(state.contextRowId);
     if (src) {
       const idx = state.shots.indexOf(src);
-      const dup = createShot({ ...src, id: uid(), num: String(state.shots.length + 1), callTime: '' });
+      const newId = uid();
+      const dup = createShot({ ...src, id: newId, num: String(state.shots.length + 1), callTime: '' });
+      if (src.storyboard) {
+        try {
+          const imgData = await getImage(src.id);
+          if (imgData) {
+            await putImage(newId, imgData);
+          }
+        } catch (e) {
+          console.error('Failed to copy storyboard image:', e);
+        }
+      }
       const updatedShots = [...state.shots];
       updatedShots.splice(idx + 1, 0, dup);
       setShots(updatedShots);
@@ -1029,7 +1047,7 @@ import { syncRequest } from './sync.js';
       </div>
 
       <select data-field="blockType" class="gc-pill" style="appearance:none;">
-        ${['PREP','BREAK','LUNCH','TRAVEL','CUSTOM'].map(t => `<option value="${t}"${s.blockType === t ? ' selected' : ''}>${t}</option>`).join('')}
+        ${['PREP','BREAK','LUNCH','TRAVEL','WRAP','CUSTOM'].map(t => `<option value="${t}"${s.blockType === t ? ' selected' : ''}>${t}</option>`).join('')}
       </select>
       <span contenteditable="true" data-field="label" class="block-label" data-placeholder="Label..." style="${s.blockType === 'CUSTOM' ? 'display:inline-block;' : 'display:none;'} color:var(--text-0); font-weight:bold; font-family:var(--font-sans);">${esc(s.label || '')}</span>
       
